@@ -1,0 +1,145 @@
+{
+  "name": "bolt-ai-crypto",
+  "productName": "Bolt AI Crypto",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Advanced Cryptocurrency Neural AI Agent System",
+  "author": "Bolt AI Team",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "vite build",
+    "build:electron": "vite build && electron-builder",
+    "build:win": "vite build && electron-builder --win --x64",
+    "build:portable": "vite build && electron-builder --win --x64 portable",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "postinstall": "electron-builder install-app-deps",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --watch",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:all": "npm run test:run && npm run test:e2e",
+    "test:ci": "npm run test:run -- --coverage && npm run test:e2e",
+    "clean": "node -e \"const fs=require('fs');const path=require('path');if(fs.existsSync('node_modules'))fs.rmSync('node_modules',{recursive:true,force:true});if(fs.existsSync('package-lock.json'))fs.unlinkSync('package-lock.json');if(fs.existsSync('.npm'))fs.rmSync('.npm',{recursive:true,force:true});console.log('Cleaned node_modules, package-lock.json, and .npm directory');\"",
+    "reinstall": "npm run clean && npm install",
+    "fix:npm": "powershell -ExecutionPolicy Bypass -File scripts/npm-fix-final.ps1",
+    "fix:npm:force": "powershell -ExecutionPolicy Bypass -File scripts/npm-fix-final.ps1 -Strategy force-legacy",
+    "fix:npm:check": "powershell -ExecutionPolicy Bypass -File scripts/npm-fix-final.ps1 -CheckOnly"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "axios": "^1.6.5",
+    "chart.js": "^4.4.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.344.0",
+    "react": "^18.3.1",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.10.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.1",
+    "@playwright/test": "^1.56.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^14.3.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.11.5",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "@vitest/coverage-v8": "^1.6.1",
+    "@vitest/ui": "^1.6.1",
+    "autoprefixer": "^10.4.18",
+    "concurrently": "^8.2.2",
+    "electron": "^28.1.4",
+    "electron-builder": "^24.9.1",
+    "electron-updater": "^6.1.7",
+    "eslint": "^9.9.1",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.11",
+    "globals": "^15.9.0",
+    "jsdom": "^23.2.0",
+    "msw": "^2.11.5",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.3.0",
+    "vite": "^5.4.2",
+    "vite-plugin-electron": "^0.28.2",
+    "vitest": "^1.6.1",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.boltai.crypto",
+    "productName": "Bolt AI Crypto",
+    "copyright": "Copyright © 2025 Bolt AI Team",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "msi",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "requestedExecutionLevel": "asInvoker",
+      "certificateFile": null,
+      "certificatePassword": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Bolt AI Crypto"
+    },
+    "msi": {
+      "oneClick": false,
+      "perMachine": false
+    },
+    "directories": {
+      "output": "dist-electron",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "backend-dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "backend-dist",
+        "to": "backend",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "publish": {
+      "provider": "generic",
+      "url": "https://updates.boltai.crypto/releases"
+    }
+  }
+}

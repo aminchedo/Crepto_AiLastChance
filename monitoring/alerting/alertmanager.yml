@@ -1,0 +1,112 @@
+# Alertmanager Configuration for Crepto AI
+global:
+  resolve_timeout: 5m
+  # SMTP configuration (update with your email settings)
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@crepto-ai.com'
+  smtp_auth_username: 'your-email@gmail.com'
+  smtp_auth_password: 'your-app-password'
+  smtp_require_tls: true
+
+# Templates for notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Alert routing
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'default'
+  
+  # Route specific alerts to different receivers
+  routes:
+    # Critical alerts go to multiple channels
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      continue: true
+      
+    # API health alerts
+    - match_re:
+        service: '(backend|proxy|frontend)'
+      receiver: 'api-team'
+      
+    # Performance alerts
+    - match:
+        alertname: 'HighCPUUsage|HighMemoryUsage|HighDiskUsage'
+      receiver: 'ops-team'
+      
+    # External API failures
+    - match_re:
+        api: '.+'
+      receiver: 'api-team'
+
+# Receivers - Define notification channels
+receivers:
+  # Default receiver (console logs)
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://localhost:9093/api/v1/alerts'
+        send_resolved: true
+
+  # Critical alerts - Multiple channels
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'team@crepto-ai.com'
+        headers:
+          Subject: '[CRITICAL] Crepto AI Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>Critical Alert</h2>
+          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>Severity:</strong> {{ .CommonLabels.severity }}</p>
+          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
+          <p><strong>Time:</strong> {{ .StartsAt }}</p>
+    # Slack webhook (uncomment and configure)
+    # slack_configs:
+    #   - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+    #     channel: '#alerts-critical'
+    #     title: 'Critical Alert: {{ .GroupLabels.alertname }}'
+    #     text: '{{ .CommonAnnotations.description }}'
+    
+  # API Team alerts
+  - name: 'api-team'
+    email_configs:
+      - to: 'api-team@crepto-ai.com'
+        headers:
+          Subject: '[API] Crepto AI Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>API Alert</h2>
+          <p><strong>Service:</strong> {{ .CommonLabels.service }}</p>
+          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
+
+  # Operations Team alerts  
+  - name: 'ops-team'
+    email_configs:
+      - to: 'ops-team@crepto-ai.com'
+        headers:
+          Subject: '[OPS] Crepto AI Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>Operations Alert</h2>
+          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>Instance:</strong> {{ .CommonLabels.instance }}</p>
+          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
+
+# Inhibition rules - Suppress certain alerts when others are firing
+inhibit_rules:
+  # Inhibit all other alerts if the service is down
+  - source_match:
+      severity: 'critical'
+      alertname: 'BackendAPIDown'
+    target_match_re:
+      service: 'backend'
+    equal: ['instance']
+    
+  # Don't alert about high error rates if API is down
+  - source_match:
+      alertname: '.*Down'
+    target_match:
+      alertname: 'HighErrorRate'
+    equal: ['service']

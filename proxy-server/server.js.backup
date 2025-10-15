@@ -1,0 +1,438 @@
+/**
+ * CORS-Free Crypto API Proxy Server
+ * Eliminates all CORS issues by proxying API calls through Node.js backend
+ */
+
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+const rateLimit = require('express-rate-limit');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3002;
+
+// ===== MIDDLEWARE =====
+
+// Enable CORS for all routes (including file:// protocol for local testing)
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, or file://)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://localhost:8000',
+      'null' // This allows file:// protocol
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('file://')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins for development
+    }
+  },
+  credentials: true
+}));
+
+app.use(express.json());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100 // 100 requests per minute
+});
+app.use('/api/', limiter);
+
+// Request logging
+app.use((req, res, next) => {
+  console.log(`📨 ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  next();
+});
+
+// ===== HEALTH CHECK =====
+
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    service: 'Crypto API Proxy Server',
+    port: PORT,
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      coinmarketcap: '✅ Available',
+      cryptocompare: '✅ Available',
+      coingecko: '✅ Available',
+      feargreed: '✅ Available',
+      news: '✅ Available',
+      whale: '✅ Available'
+    }
+  });
+});
+
+// ===== MARKET DATA ROUTES =====
+
+// CoinMarketCap - Quotes
+app.get('/api/coinmarketcap/quotes', async (req, res) => {
+  try {
+    const symbols = req.query.symbols || 'BTC,ETH,BNB,ADA,SOL,MATIC,DOT,LINK,LTC,XRP';
+    console.log(`📊 [CMC] Fetching quotes for: ${symbols}`);
+    
+    const response = await axios.get(
+      'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest',
+      {
+        params: { symbol: symbols, convert: 'USD' },
+        headers: {
+          'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY || 'b54bcf4d-1bca-4e8e-9a24-22ff2c3d462c'
+        },
+        timeout: 10000
+      }
+    );
+
+    console.log(`✅ [CMC] Success - ${Object.keys(response.data.data || {}).length} coins`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(`❌ [CMC] Error:`, error.message);
+    
+    // Try fallback key
+    if (error.response?.status === 401) {
+      try {
+        console.log(`🔄 [CMC] Trying fallback key...`);
+        const response = await axios.get(
+          'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest',
+          {
+            params: { symbol: req.query.symbols || 'BTC,ETH,BNB', convert: 'USD' },
+            headers: {
+              'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY_2 || '04cf4b5b-9868-465c-8ba0-9f2e78c92eb1'
+            },
+            timeout: 10000
+          }
+        );
+        console.log(`✅ [CMC] Fallback key success`);
+        return res.json(response.data);
+      } catch (fallbackError) {
+        console.error(`❌ [CMC] Fallback also failed`);
+      }
+    }
+    
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      endpoint: 'coinmarketcap'
+    });
+  }
+});
+
+// CoinGecko - Price
+app.get('/api/coingecko/price', async (req, res) => {
+  try {
+    const ids = req.query.ids || 'bitcoin,ethereum,binancecoin,cardano,solana,polygon,polkadot,chainlink,litecoin,ripple';
+    console.log(`💎 [CoinGecko] Fetching prices for: ${ids}`);
+    
+    const response = await axios.get(
+      'https://api.coingecko.com/api/v3/simple/price',
+      {
+        params: {
+          ids: ids,
+          vs_currencies: 'usd',
+          include_24hr_change: true,
+          include_24hr_vol: true,
+          include_market_cap: true
+        },
+        timeout: 10000
+      }
+    );
+
+    console.log(`✅ [CoinGecko] Success - ${Object.keys(response.data || {}).length} coins`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(`❌ [CoinGecko] Error:`, error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      endpoint: 'coingecko'
+    });
+  }
+});
+
+// CryptoCompare - Price
+app.get('/api/cryptocompare/price', async (req, res) => {
+  try {
+    const fsyms = req.query.fsyms || 'BTC,ETH,BNB,ADA,SOL';
+    console.log(`📈 [CryptoCompare] Fetching prices for: ${fsyms}`);
+    
+    const response = await axios.get(
+      'https://min-api.cryptocompare.com/data/pricemultifull',
+      {
+        params: {
+          fsyms: fsyms,
+          tsyms: 'USD'
+        },
+        headers: {
+          'authorization': `Apikey ${process.env.CRYPTOCOMPARE_KEY || 'e79c8e6d4c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f'}`
+        },
+        timeout: 10000
+      }
+    );
+
+    console.log(`✅ [CryptoCompare] Success`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(`❌ [CryptoCompare] Error:`, error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      endpoint: 'cryptocompare'
+    });
+  }
+});
+
+// ===== SENTIMENT ROUTES =====
+
+// Fear & Greed Index
+app.get('/api/feargreed', async (req, res) => {
+  try {
+    console.log(`😨 [Fear&Greed] Fetching index...`);
+    
+    const response = await axios.get(
+      'https://api.alternative.me/fng/?limit=1&format=json',
+      { timeout: 10000 }
+    );
+
+    const value = parseInt(response.data.data[0].value);
+    console.log(`✅ [Fear&Greed] Success - Value: ${value}`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(`❌ [Fear&Greed] Error:`, error.message);
+    // Return neutral fallback
+    res.json({
+      data: [{
+        value: '50',
+        value_classification: 'Neutral',
+        timestamp: Math.floor(Date.now() / 1000).toString()
+      }]
+    });
+  }
+});
+
+// ===== NEWS ROUTES =====
+
+// NewsAPI - Crypto News
+app.get('/api/news/crypto', async (req, res) => {
+  try {
+    const query = req.query.q || 'cryptocurrency OR bitcoin OR ethereum';
+    console.log(`📰 [NewsAPI] Fetching news for: ${query}`);
+    
+    const response = await axios.get(
+      'https://newsapi.org/v2/everything',
+      {
+        params: {
+          q: query,
+          apiKey: process.env.NEWSAPI_KEY || 'pub_346789abc123def456789ghi012345jkl',
+          sortBy: 'publishedAt',
+          language: 'en',
+          pageSize: req.query.pageSize || 20
+        },
+        timeout: 10000
+      }
+    );
+
+    console.log(`✅ [NewsAPI] Success - ${response.data.articles?.length || 0} articles`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(`❌ [NewsAPI] Error:`, error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      endpoint: 'newsapi',
+      articles: []
+    });
+  }
+});
+
+// ===== WHALE TRACKING ROUTES =====
+
+// Whale Alert (if key available)
+app.get('/api/whale-alert/transactions', async (req, res) => {
+  try {
+    const minValue = req.query.min_value || 1000000;
+    console.log(`🐋 [WhaleAlert] Fetching transactions > $${minValue}`);
+    
+    if (!process.env.WHALEALERT_KEY) {
+      return res.json({
+        transactions: [],
+        message: 'Whale Alert API key not configured'
+      });
+    }
+    
+    const response = await axios.get(
+      'https://api.whale-alert.io/v1/transactions',
+      {
+        params: {
+          api_key: process.env.WHALEALERT_KEY,
+          min_value: minValue,
+          start: req.query.start || Math.floor(Date.now() / 1000) - 3600,
+          end: req.query.end || Math.floor(Date.now() / 1000)
+        },
+        timeout: 10000
+      }
+    );
+
+    console.log(`✅ [WhaleAlert] Success - ${response.data.transactions?.length || 0} transactions`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(`❌ [WhaleAlert] Error:`, error.message);
+    res.json({
+      transactions: [],
+      error: error.message
+    });
+  }
+});
+
+// ===== BLOCKCHAIN EXPLORER ROUTES =====
+
+// Etherscan - Account Balance
+app.get('/api/etherscan/balance/:address', async (req, res) => {
+  try {
+    const address = req.params.address;
+    console.log(`🔗 [Etherscan] Fetching balance for: ${address.substring(0, 10)}...`);
+    
+    const response = await axios.get(
+      'https://api.etherscan.io/api',
+      {
+        params: {
+          module: 'account',
+          action: 'balance',
+          address: address,
+          tag: 'latest',
+          apikey: process.env.ETHERSCAN_KEY || 'SZHYFZK2RR8H9TIMJBVW54V4H81K2Z2KR2'
+        },
+        timeout: 10000
+      }
+    );
+
+    console.log(`✅ [Etherscan] Success`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(`❌ [Etherscan] Error:`, error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      endpoint: 'etherscan'
+    });
+  }
+});
+
+// BscScan - Account Balance
+app.get('/api/bscscan/balance/:address', async (req, res) => {
+  try {
+    const address = req.params.address;
+    console.log(`🔗 [BscScan] Fetching balance for: ${address.substring(0, 10)}...`);
+    
+    const response = await axios.get(
+      'https://api.bscscan.com/api',
+      {
+        params: {
+          module: 'account',
+          action: 'balance',
+          address: address,
+          tag: 'latest',
+          apikey: process.env.BSCSCAN_KEY || 'K62RKHGXTDCG53RU4MCG6XABIMJKTN19IT'
+        },
+        timeout: 10000
+      }
+    );
+
+    console.log(`✅ [BscScan] Success`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(`❌ [BscScan] Error:`, error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      endpoint: 'bscscan'
+    });
+  }
+});
+
+// TronScan - Account Info
+app.get('/api/tronscan/account/:address', async (req, res) => {
+  try {
+    const address = req.params.address;
+    console.log(`🔗 [TronScan] Fetching account for: ${address.substring(0, 10)}...`);
+    
+    const response = await axios.get(
+      `https://api.tronscan.org/api/account?address=${address}`,
+      {
+        headers: {
+          'TRON-PRO-API-KEY': process.env.TRONSCAN_KEY || '7ae72726-bffe-4e74-9c33-97b761eeea21'
+        },
+        timeout: 10000
+      }
+    );
+
+    console.log(`✅ [TronScan] Success`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(`❌ [TronScan] Error:`, error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.message,
+      endpoint: 'tronscan'
+    });
+  }
+});
+
+// ===== ERROR HANDLER =====
+
+app.use((error, req, res, next) => {
+  console.error('❌ Server Error:', error.message);
+  res.status(500).json({
+    error: 'Internal server error',
+    message: error.message
+  });
+});
+
+// ===== START SERVER =====
+
+app.listen(PORT, () => {
+  console.clear();
+  console.log(`
+╔══════════════════════════════════════════════════════════╗
+║     🚀 CRYPTO API PROXY SERVER                          ║
+║        Status: RUNNING                                   ║
+╚══════════════════════════════════════════════════════════╝
+
+   Port: ${PORT}
+   URL:  http://localhost:${PORT}
+
+📊 Market Data Endpoints:
+   GET  /api/coinmarketcap/quotes?symbols=BTC,ETH,BNB
+   GET  /api/coingecko/price?ids=bitcoin,ethereum
+   GET  /api/cryptocompare/price?fsyms=BTC,ETH
+
+😨 Sentiment Endpoints:
+   GET  /api/feargreed
+
+🔗 Blockchain Explorer Endpoints:
+   GET  /api/etherscan/balance/:address
+   GET  /api/bscscan/balance/:address
+   GET  /api/tronscan/account/:address
+
+📰 News Endpoints:
+   GET  /api/news/crypto?q=bitcoin
+
+🏥 Health Check:
+   GET  /health
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔑 API Keys Status:
+   ${process.env.CMC_API_KEY ? '✅' : '⚠️'}  CoinMarketCap
+   ${process.env.CRYPTOCOMPARE_KEY ? '✅' : '⚠️'}  CryptoCompare
+   ${process.env.ETHERSCAN_KEY ? '✅' : '⚠️'}  Etherscan
+   ${process.env.BSCSCAN_KEY ? '✅' : '⚠️'}  BscScan
+   ${process.env.TRONSCAN_KEY ? '✅' : '⚠️'}  TronScan
+   ${process.env.NEWSAPI_KEY ? '✅' : '⚠️'}  NewsAPI
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 Frontend should connect to: http://localhost:${PORT}/api/*
+📝 Press Ctrl+C to stop server
+
+  `);
+});

@@ -1,0 +1,61 @@
+# Development dependencies for BOLT AI Neural Agent System
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-xdist==3.3.1
+pytest-html==4.1.1
+pytest-json-report==1.5.0
+
+# Code Quality
+black==23.11.0
+isort==5.12.0
+flake8==6.1.0
+mypy==1.7.1
+bandit==1.7.5
+safety==2.3.5
+
+# Security
+cryptography==41.0.7
+pycryptodome==3.19.0
+
+# Performance Testing
+psutil==5.9.6
+memory-profiler==0.61.0
+line-profiler==4.1.1
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==1.3.0
+mkdocs==1.5.3
+mkdocs-material==9.4.8
+
+# Build Tools
+wheel==0.41.2
+setuptools==69.0.2
+build==1.0.3
+
+# CI/CD
+cyclonedx-bom==4.0.0
+weasyprint==60.2
+matplotlib==3.8.2
+seaborn==0.13.0
+
+# Development Utilities
+ipython==8.17.2
+jupyter==1.0.0
+notebook==7.0.6
+
+# Database
+sqlalchemy==2.0.23
+alembic==1.13.1
+
+# Monitoring
+prometheus-client==0.19.0
+structlog==23.2.0
+
+# Deployment
+fabric==3.2.2
+paramiko==3.3.1

@@ -1,0 +1,102 @@
+{
+  "slis": {
+    "startup_time": {
+      "name": "Application Startup Time",
+      "unit": "seconds",
+      "threshold": 5.0,
+      "measurement": "histogram"
+    },
+    "prediction_latency": {
+      "name": "Prediction Latency",
+      "unit": "milliseconds",
+      "threshold": 100.0,
+      "measurement": "histogram"
+    },
+    "ui_frame_time": {
+      "name": "UI Frame Time",
+      "unit": "milliseconds",
+      "threshold": 16.67,
+      "measurement": "histogram"
+    },
+    "memory_usage": {
+      "name": "Memory Usage",
+      "unit": "GB",
+      "threshold": 2.0,
+      "measurement": "gauge"
+    },
+    "cpu_usage": {
+      "name": "CPU Usage",
+      "unit": "percent",
+      "threshold": 80.0,
+      "measurement": "gauge"
+    },
+    "api_response_time": {
+      "name": "API Response Time",
+      "unit": "milliseconds",
+      "threshold": 1000.0,
+      "measurement": "histogram"
+    },
+    "error_rate": {
+      "name": "Error Rate",
+      "unit": "percent",
+      "threshold": 0.5,
+      "measurement": "rate"
+    },
+    "availability": {
+      "name": "Service Availability",
+      "unit": "percent",
+      "threshold": 99.95,
+      "measurement": "rate"
+    }
+  },
+  "slos": {
+    "startup_time": {
+      "target": 5.0,
+      "window": "1h",
+      "tolerance": 0.05
+    },
+    "prediction_latency": {
+      "target": 100.0,
+      "window": "1h",
+      "tolerance": 0.02
+    },
+    "ui_frame_time": {
+      "target": 16.67,
+      "window": "1h",
+      "tolerance": 0.05
+    },
+    "memory_usage": {
+      "target": 2.0,
+      "window": "1h",
+      "tolerance": 0.1
+    },
+    "cpu_usage": {
+      "target": 80.0,
+      "window": "1h",
+      "tolerance": 0.05
+    },
+    "api_response_time": {
+      "target": 1000.0,
+      "window": "1h",
+      "tolerance": 0.02
+    },
+    "error_rate": {
+      "target": 0.5,
+      "window": "1h",
+      "tolerance": 0.05
+    },
+    "availability": {
+      "target": 99.95,
+      "window": "1h",
+      "tolerance": 0.0005
+    }
+  },
+  "alerts": {
+    "enabled": true,
+    "channels": ["slack", "email", "pagerduty"],
+    "thresholds": {
+      "warning": 0.9,
+      "critical": 0.95
+    }
+  }
+}

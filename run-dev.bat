@@ -1,0 +1,3 @@
+@echo off
+echo Starting Crepto AI development environment...
+npx tsx scripts/run-all.ts

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crepto AI - Proxy Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .status {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .test-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .test-card h3 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        .result {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .success {
+            color: #4ade80;
+        }
+        
+        .error {
+            color: #f87171;
+        }
+        
+        .warning {
+            color: #fbbf24;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+        
+        .badge.success {
+            background: #4ade80;
+            color: #000;
+        }
+        
+        .badge.error {
+            background: #f87171;
+            color: #000;
+        }
+        
+        .loader {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Crepto AI - Proxy Server Test</h1>
+        
+        <div class="status" id="proxyStatus">
+            <h2>Proxy Server Status: <span id="statusText">Checking...</span></h2>
+            <p id="statusDetails"></p>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button onclick="runAllTests()">▶️ Run All Tests</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+        
+        <div class="grid">
+            <div class="test-card">
+                <h3>1. Health Check</h3>
+                <button onclick="testHealth()">Test Health</button>
+                <div class="result" id="healthResult">Click button to test...</div>
+            </div>
+            
+            <div class="test-card">
+                <h3>2. Fear & Greed Index</h3>
+                <button onclick="testFearGreed()">Test F&G</button>
+                <div class="result" id="fgResult">Click button to test...</div>
+            </div>
+            
+            <div class="test-card">
+                <h3>3. Bitcoin Price (CoinGecko)</h3>
+                <button onclick="testBitcoinPrice()">Test BTC Price</button>
+                <div class="result" id="btcResult">Click button to test...</div>
+            </div>
+            
+            <div class="test-card">
+                <h3>4. Market Data (CoinMarketCap)</h3>
+                <button onclick="testCoinMarketCap()">Test CMC</button>
+                <div class="result" id="cmcResult">Click button to test...</div>
+            </div>
+            
+            <div class="test-card">
+                <h3>5. Crypto News</h3>
+                <button onclick="testNews()">Test News</button>
+                <div class="result" id="newsResult">Click button to test...</div>
+            </div>
+            
+            <div class="test-card">
+                <h3>6. CryptoCompare</h3>
+                <button onclick="testCryptoCompare()">Test CC</button>
+                <div class="result" id="ccResult">Click button to test...</div>
+            </div>
+        </div>
+        
+        <div class="status" style="margin-top: 30px;">
+            <h2>Console Log</h2>
+            <div class="result" id="consoleLog" style="max-height: 200px;">
+                Open browser console (F12) to see detailed logs...
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const PROXY_URL = 'http://localhost:3002';
+        let testResults = {
+            health: false,
+            feargreed: false,
+            bitcoin: false,
+            cmc: false,
+            news: false,
+            cc: false
+        };
+        
+        // Check proxy status on load
+        window.addEventListener('load', checkProxyStatus);
+        
+        function log(message, type = 'info') {
+            const consoleLog = document.getElementById('consoleLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'success' ? '#4ade80' : type === 'error' ? '#f87171' : '#fff';
+            consoleLog.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        async function checkProxyStatus() {
+            const statusText = document.getElementById('statusText');
+            const statusDetails = document.getElementById('statusDetails');
+            
+            try {
+                const response = await fetch(`${PROXY_URL}/health`);
+                const data = await response.json();
+                
+                if (data.status === 'OK') {
+                    statusText.innerHTML = '<span class="success">✅ Running</span>';
+                    statusDetails.innerHTML = `
+                        <p>Port: ${data.port} | Service: ${data.service}</p>
+                        <p style="margin-top: 10px;">Available Endpoints:</p>
+                        <ul style="margin-left: 20px; margin-top: 5px;">
+                            ${Object.entries(data.endpoints).map(([key, value]) => 
+                                `<li>${key}: ${value}</li>`
+                            ).join('')}
+                        </ul>
+                    `;
+                    log('✅ Proxy server is running and healthy', 'success');
+                } else {
+                    throw new Error('Unexpected response');
+                }
+            } catch (error) {
+                statusText.innerHTML = '<span class="error">❌ Not Running</span>';
+                statusDetails.innerHTML = `
+                    <p class="error">Cannot connect to proxy server at ${PROXY_URL}</p>
+                    <p>Make sure to start the proxy server:</p>
+                    <code>cd proxy-server && npm start</code>
+                `;
+                log(`❌ Proxy server error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testHealth() {
+            const resultDiv = document.getElementById('healthResult');
+            resultDiv.innerHTML = '<div class="loader"></div> Testing...';
+            
+            try {
+                const response = await fetch(`${PROXY_URL}/health`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ SUCCESS</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                testResults.health = true;
+                log('✅ Health check passed', 'success');
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ERROR: ${error.message}</div>`;
+                testResults.health = false;
+                log(`❌ Health check failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testFearGreed() {
+            const resultDiv = document.getElementById('fgResult');
+            resultDiv.innerHTML = '<div class="loader"></div> Testing...';
+            
+            try {
+                const response = await fetch(`${PROXY_URL}/api/feargreed`);
+                const data = await response.json();
+                
+                const value = data.data[0].value;
+                const classification = data.data[0].value_classification;
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ SUCCESS</div>
+                    <h4 style="margin: 10px 0;">Fear & Greed Index</h4>
+                    <p style="font-size: 2em; margin: 10px 0;">😨 ${value}</p>
+                    <p style="font-size: 1.2em;">${classification}</p>
+                    <details style="margin-top: 10px;">
+                        <summary>View Raw Data</summary>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                `;
+                testResults.feargreed = true;
+                log(`✅ Fear & Greed: ${value} (${classification})`, 'success');
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ERROR: ${error.message}</div>`;
+                testResults.feargreed = false;
+                log(`❌ Fear & Greed test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testBitcoinPrice() {
+            const resultDiv = document.getElementById('btcResult');
+            resultDiv.innerHTML = '<div class="loader"></div> Testing...';
+            
+            try {
+                const response = await fetch(`${PROXY_URL}/api/coingecko/price?ids=bitcoin,ethereum`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ SUCCESS</div>
+                    <h4 style="margin: 10px 0;">Current Prices</h4>
+                    <p>₿ Bitcoin: $${data.bitcoin.usd.toLocaleString()}</p>
+                    <p style="color: ${data.bitcoin.usd_24h_change > 0 ? '#4ade80' : '#f87171'}">
+                        24h: ${data.bitcoin.usd_24h_change.toFixed(2)}%
+                    </p>
+                    <hr style="margin: 10px 0; opacity: 0.3;">
+                    <p>Ξ Ethereum: $${data.ethereum.usd.toLocaleString()}</p>
+                    <p style="color: ${data.ethereum.usd_24h_change > 0 ? '#4ade80' : '#f87171'}">
+                        24h: ${data.ethereum.usd_24h_change.toFixed(2)}%
+                    </p>
+                    <details style="margin-top: 10px;">
+                        <summary>View Raw Data</summary>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                `;
+                testResults.bitcoin = true;
+                log(`✅ Bitcoin price: $${data.bitcoin.usd.toLocaleString()}`, 'success');
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ERROR: ${error.message}</div>`;
+                testResults.bitcoin = false;
+                log(`❌ Bitcoin price test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testCoinMarketCap() {
+            const resultDiv = document.getElementById('cmcResult');
+            resultDiv.innerHTML = '<div class="loader"></div> Testing...';
+            
+            try {
+                const response = await fetch(`${PROXY_URL}/api/coinmarketcap/quotes?symbols=BTC,ETH,BNB`);
+                const data = await response.json();
+                
+                const coins = Object.values(data.data);
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ SUCCESS</div>
+                    <h4 style="margin: 10px 0;">Market Data</h4>
+                    ${coins.slice(0, 3).map(coin => `
+                        <div style="margin: 10px 0; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 5px;">
+                            <strong>${coin.symbol}</strong> - $${coin.quote.USD.price.toFixed(2)}
+                            <br>
+                            <small style="color: ${coin.quote.USD.percent_change_24h > 0 ? '#4ade80' : '#f87171'}">
+                                24h: ${coin.quote.USD.percent_change_24h.toFixed(2)}%
+                            </small>
+                        </div>
+                    `).join('')}
+                    <details style="margin-top: 10px;">
+                        <summary>View Raw Data</summary>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                `;
+                testResults.cmc = true;
+                log(`✅ CoinMarketCap: Got ${coins.length} coins`, 'success');
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ERROR: ${error.message}</div>`;
+                testResults.cmc = false;
+                log(`❌ CoinMarketCap test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testNews() {
+            const resultDiv = document.getElementById('newsResult');
+            resultDiv.innerHTML = '<div class="loader"></div> Testing...';
+            
+            try {
+                const response = await fetch(`${PROXY_URL}/api/news/crypto?q=bitcoin&pageSize=5`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ SUCCESS</div>
+                    <h4 style="margin: 10px 0;">Latest News (${data.totalResults} total)</h4>
+                    ${data.articles.slice(0, 3).map(article => `
+                        <div style="margin: 10px 0; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 5px;">
+                            <strong style="color: #ffd700;">${article.title}</strong>
+                            <br>
+                            <small>${article.description?.substring(0, 100)}...</small>
+                        </div>
+                    `).join('')}
+                    <details style="margin-top: 10px;">
+                        <summary>View Raw Data</summary>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                `;
+                testResults.news = true;
+                log(`✅ News API: Got ${data.articles.length} articles`, 'success');
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ERROR: ${error.message}</div>`;
+                testResults.news = false;
+                log(`❌ News test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testCryptoCompare() {
+            const resultDiv = document.getElementById('ccResult');
+            resultDiv.innerHTML = '<div class="loader"></div> Testing...';
+            
+            try {
+                const response = await fetch(`${PROXY_URL}/api/cryptocompare/price?fsyms=BTC,ETH`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ SUCCESS</div>
+                    <h4 style="margin: 10px 0;">CryptoCompare Data</h4>
+                    ${Object.keys(data.RAW).map(symbol => `
+                        <div style="margin: 10px 0; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 5px;">
+                            <strong>${symbol}</strong> - $${data.DISPLAY[symbol].USD.PRICE}
+                            <br>
+                            <small>24h Volume: ${data.DISPLAY[symbol].USD.TOTALVOLUME24HTO}</small>
+                        </div>
+                    `).join('')}
+                    <details style="margin-top: 10px;">
+                        <summary>View Raw Data</summary>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                `;
+                testResults.cc = true;
+                log(`✅ CryptoCompare: Success`, 'success');
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ERROR: ${error.message}</div>`;
+                testResults.cc = false;
+                log(`❌ CryptoCompare test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function runAllTests() {
+            log('🚀 Starting all tests...', 'info');
+            document.getElementById('consoleLog').innerHTML = '';
+            
+            await checkProxyStatus();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testHealth();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testFearGreed();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testBitcoinPrice();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testCoinMarketCap();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testNews();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testCryptoCompare();
+            
+            const passed = Object.values(testResults).filter(v => v).length;
+            const total = Object.keys(testResults).length;
+            
+            log(`\n${'='.repeat(50)}`, 'info');
+            log(`✅ Tests Complete: ${passed}/${total} passed`, passed === total ? 'success' : 'error');
+            log(`${'='.repeat(50)}`, 'info');
+        }
+        
+        function clearResults() {
+            document.getElementById('consoleLog').innerHTML = 'Cleared...';
+            const resultDivs = ['healthResult', 'fgResult', 'btcResult', 'cmcResult', 'newsResult', 'ccResult'];
+            resultDivs.forEach(id => {
+                document.getElementById(id).innerHTML = 'Click button to test...';
+            });
+            testResults = {
+                health: false,
+                feargreed: false,
+                bitcoin: false,
+                cmc: false,
+                news: false,
+                cc: false
+            };
+        }
+    </script>
+</body>
+</html>
