@@ -1,0 +1,1 @@
+   await fetch('http://localhost:3002/api/feargreed').then(r=

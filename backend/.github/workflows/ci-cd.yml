@@ -1,0 +1,479 @@
+name: BOLT AI Neural Agent System - CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Nightly backtests at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+  ELECTRON_VERSION: '28'
+
+jobs:
+  # Job 1: Code Quality and Security
+  quality-security:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install Python dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+    
+    - name: Install Node.js dependencies
+      run: |
+        npm ci
+        npm run postinstall
+    
+    - name: Python linting (Black, isort, flake8)
+      run: |
+        cd backend
+        black --check --diff .
+        isort --check-only --diff .
+        flake8 . --max-line-length=100 --extend-ignore=E203,W503
+    
+    - name: Type checking (mypy)
+      run: |
+        cd backend
+        mypy . --ignore-missing-imports --no-strict-optional
+    
+    - name: JavaScript/TypeScript linting (ESLint)
+      run: |
+        npm run lint
+    
+    - name: TypeScript type checking
+      run: |
+        npm run type-check
+    
+    - name: Security scan (Python - bandit)
+      run: |
+        cd backend
+        bandit -r . -f json -o bandit-report.json || true
+        bandit -r . -f txt
+    
+    - name: Security scan (Node.js - audit)
+      run: |
+        npm audit --audit-level=high
+    
+    - name: Dependency vulnerability scan
+      run: |
+        cd backend
+        safety check --json --output safety-report.json || true
+        safety check
+    
+    - name: Generate SBOM
+      run: |
+        cd backend
+        pip install cyclonedx-bom
+        cyclonedx-py -o sbom-backend.json .
+        
+        cd ..
+        npm install -g @cyclonedx/cyclonedx-npm
+        cyclonedx-npm -o sbom-frontend.json
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: |
+          backend/bandit-report.json
+          backend/safety-report.json
+          backend/sbom-backend.json
+          sbom-frontend.json
+    
+    - name: Comment PR with security findings
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          let comment = '## Security Scan Results\n\n';
+          
+          try {
+            const bandit = JSON.parse(fs.readFileSync('backend/bandit-report.json', 'utf8'));
+            if (bandit.results.length > 0) {
+              comment += '### Python Security Issues\n';
+              bandit.results.forEach(issue => {
+                comment += `- **${issue.severity}**: ${issue.test_name} in ${issue.filename}:${issue.line_number}\n`;
+              });
+            }
+          } catch (e) {
+            comment += '### Python Security: No issues found\n';
+          }
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  # Job 2: Unit and Integration Tests
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: quality-security
+    
+    strategy:
+      matrix:
+        test-type: [unit, integration, performance, security, legal]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+        cd ..
+        npm ci
+    
+    - name: Run ${{ matrix.test-type }} tests
+      run: |
+        cd backend/tests
+        python run_tests.py --type ${{ matrix.test-type }} --coverage --verbose
+      env:
+        TEST_DATABASE_URL: sqlite:///test.db
+        TEST_REDIS_URL: redis://localhost:6379/1
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results-${{ matrix.test-type }}
+        path: |
+          backend/tests/test-results.xml
+          backend/tests/htmlcov/
+    
+    - name: Upload coverage to Codecov
+      if: matrix.test-type == 'unit'
+      uses: codecov/codecov-action@v3
+      with:
+        file: backend/tests/htmlcov/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  # Job 3: Build and Package
+  build:
+    name: Build & Package
+    runs-on: windows-latest
+    timeout-minutes: 60
+    needs: [quality-security, test]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+        cd ..
+        npm ci
+        npm run postinstall
+    
+    - name: Build backend
+      run: |
+        cd backend
+        python scripts/build_backend.py
+      env:
+        PYTHONPATH: ${{ github.workspace }}/backend
+    
+    - name: Build frontend
+      run: |
+        npm run build
+    
+    - name: Build Electron app
+      run: |
+        npm run build:electron
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Sign Windows executable
+      if: github.ref == 'refs/heads/main'
+      run: |
+        signtool sign /f "${{ secrets.CERT_PATH }}" /p "${{ secrets.CERT_PASSWORD }}" /t http://timestamp.digicert.com dist-electron/Bolt AI Crypto Setup 1.0.0.exe
+      env:
+        CERT_PATH: ${{ secrets.CERT_PATH }}
+        CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts
+        path: |
+          dist-electron/
+          backend-dist/
+        retention-days: 30
+
+  # Job 4: Nightly Backtests
+  nightly-backtests:
+    name: Nightly Backtests
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+    
+    - name: Run nightly backtests
+      run: |
+        cd backend
+        python scripts/nightly_backtests.py
+      env:
+        BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
+        BINANCE_SECRET_KEY: ${{ secrets.BINANCE_SECRET_KEY }}
+        COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+    
+    - name: Generate backtest report
+      run: |
+        cd backend
+        python scripts/generate_backtest_report.py
+    
+    - name: Upload backtest results
+      uses: actions/upload-artifact@v3
+      with:
+        name: backtest-results-${{ github.run_number }}
+        path: |
+          backend/reports/backtest-*.html
+          backend/reports/backtest-*.pdf
+          backend/reports/backtest-*.json
+        retention-days: 90
+    
+    - name: Comment on main branch with results
+      if: github.ref == 'refs/heads/main'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          let comment = '## Nightly Backtest Results\n\n';
+          
+          try {
+            const report = JSON.parse(fs.readFileSync('backend/reports/backtest-summary.json', 'utf8'));
+            comment += `- **Directional Accuracy**: ${report.directional_accuracy}%\n`;
+            comment += `- **Sharpe Ratio**: ${report.sharpe_ratio}\n`;
+            comment += `- **Max Drawdown**: ${report.max_drawdown}%\n`;
+            comment += `- **Total Trades**: ${report.total_trades}\n`;
+            comment += `- **Win Rate**: ${report.win_rate}%\n\n`;
+            comment += `[View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+          } catch (e) {
+            comment += 'Backtest report generation failed. Check logs for details.';
+          }
+          
+          github.rest.repos.createCommitComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            commit_sha: context.sha,
+            body: comment
+          });
+
+  # Job 5: Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [quality-security, test, build]
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts
+        path: dist-electron/
+    
+    - name: Deploy to staging server
+      run: |
+        echo "Deploying to staging environment..."
+        # Add actual deployment commands here
+        # rsync -avz dist-electron/ user@staging-server:/opt/bolt-ai/
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests on staging..."
+        # Add smoke test commands here
+        # curl -f https://staging.bolt-ai.com/health || exit 1
+    
+    - name: Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: always()
+
+  # Job 6: Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [quality-security, test, build, nightly-backtests]
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts
+        path: dist-electron/
+    
+    - name: Deploy to production server
+      run: |
+        echo "Deploying to production environment..."
+        # Add actual deployment commands here
+        # rsync -avz dist-electron/ user@prod-server:/opt/bolt-ai/
+    
+    - name: Run health checks
+      run: |
+        echo "Running health checks on production..."
+        # Add health check commands here
+        # curl -f https://bolt-ai.com/health || exit 1
+    
+    - name: Run canary deployment
+      run: |
+        echo "Running canary deployment..."
+        # Add canary deployment logic here
+    
+    - name: Monitor SLOs
+      run: |
+        echo "Monitoring SLOs..."
+        # Add SLO monitoring commands here
+    
+    - name: Auto-rollback on SLO breach
+      run: |
+        echo "Checking SLO compliance..."
+        # Add SLO check and rollback logic here
+        # if ! check_slos; then
+        #   echo "SLO breach detected, rolling back..."
+        #   rollback_to_previous_version
+        # fi
+    
+    - name: Create GitHub release
+      if: github.ref == 'refs/heads/main'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release v${{ github.run_number }}
+        body: |
+          ## Changes
+          - Automated release from main branch
+          
+          ## Download
+          - [Windows Installer](https://github.com/${{ github.repository }}/releases/download/v${{ github.run_number }}/Bolt-AI-Crypto-Setup-${{ github.run_number }}.exe)
+          - [Portable Version](https://github.com/${{ github.repository }}/releases/download/v${{ github.run_number }}/Bolt-AI-Crypto-Portable-${{ github.run_number }}.zip)
+          
+          ## Backtest Results
+          - Directional Accuracy: [View Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        draft: false
+        prerelease: false
+    
+    - name: Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: always()
+
+  # Job 7: Cleanup
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+    - name: Cleanup old artifacts
+      run: |
+        echo "Cleaning up old artifacts..."
+        # Add cleanup commands here
+    
+    - name: Cleanup old releases
+      run: |
+        echo "Cleaning up old releases..."
+        # Add release cleanup commands here

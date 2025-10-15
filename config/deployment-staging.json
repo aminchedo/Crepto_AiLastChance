@@ -1,0 +1,46 @@
+{
+    "servers": {
+        "staging": {
+            "host": "staging.bolt-ai.com",
+            "user": "deploy",
+            "path": "/opt/bolt-ai",
+            "port": 22,
+            "key_file": "~/.ssh/bolt-ai-staging.pem"
+        }
+    },
+    "health_checks": {
+        "endpoints": [
+            "/health",
+            "/api/v1/health",
+            "/api/v1/market/data?symbols=BTCUSDT&limit=1"
+        ],
+        "timeout": 30,
+        "retries": 3,
+        "interval": 10
+    },
+    "rollback": {
+        "enabled": true,
+        "max_versions": 5,
+        "auto_rollback_on_failure": true
+    },
+    "notifications": {
+        "slack": {
+            "webhook_url": "${SLACK_WEBHOOK_URL}",
+            "channel": "#deployments"
+        },
+        "email": {
+            "smtp_server": "smtp.gmail.com",
+            "smtp_port": 587,
+            "username": "${EMAIL_USERNAME}",
+            "password": "${EMAIL_PASSWORD}",
+            "to": [
+                "devops@bolt-ai.com"
+            ]
+        }
+    },
+    "monitoring": {
+        "enabled": true,
+        "metrics_endpoint": "/metrics",
+        "log_level": "INFO"
+    }
+}

@@ -1,0 +1,893 @@
+{
+    "dashboard": {
+        "id": null,
+        "uid": "advanced-backend",
+        "title": "BOLT AI - Advanced Backend Monitoring",
+        "tags": [
+            "backend",
+            "ai",
+            "crypto",
+            "trading",
+            "auto-provisioned"
+        ],
+        "timezone": "browser",
+        "schemaVersion": 38,
+        "version": 1,
+        "refresh": "10s",
+        "time": {
+            "from": "now-1h",
+            "to": "now"
+        },
+        "panels": [
+            {
+                "id": 1,
+                "type": "stat",
+                "title": "Backend Status",
+                "gridPos": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 4,
+                    "h": 4
+                },
+                "targets": [
+                    {
+                        "expr": "up{job=\"backend\"}",
+                        "refId": "A",
+                        "legendFormat": "Backend"
+                    }
+                ],
+                "options": {
+                    "reduceOptions": {
+                        "values": false,
+                        "calcs": [
+                            "lastNotNull"
+                        ]
+                    },
+                    "text": {},
+                    "textMode": "value_and_name",
+                    "colorMode": "background",
+                    "graphMode": "none"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [
+                            {
+                                "type": "value",
+                                "options": {
+                                    "0": {
+                                        "text": "DOWN",
+                                        "color": "red"
+                                    },
+                                    "1": {
+                                        "text": "UP",
+                                        "color": "green"
+                                    }
+                                }
+                            }
+                        ],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": 0,
+                                    "color": "red"
+                                },
+                                {
+                                    "value": 1,
+                                    "color": "green"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 2,
+                "type": "stat",
+                "title": "Total API Requests",
+                "gridPos": {
+                    "x": 4,
+                    "y": 0,
+                    "w": 4,
+                    "h": 4
+                },
+                "targets": [
+                    {
+                        "expr": "sum(bolt_ai_api_requests_total)",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "reduceOptions": {
+                        "values": false,
+                        "calcs": [
+                            "lastNotNull"
+                        ]
+                    },
+                    "textMode": "value_and_name",
+                    "colorMode": "value",
+                    "graphMode": "area"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "short",
+                        "color": {
+                            "mode": "palette-classic"
+                        }
+                    }
+                }
+            },
+            {
+                "id": 3,
+                "type": "stat",
+                "title": "Total Predictions",
+                "gridPos": {
+                    "x": 8,
+                    "y": 0,
+                    "w": 4,
+                    "h": 4
+                },
+                "targets": [
+                    {
+                        "expr": "sum(bolt_ai_predictions_total)",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "reduceOptions": {
+                        "values": false,
+                        "calcs": [
+                            "lastNotNull"
+                        ]
+                    },
+                    "textMode": "value_and_name",
+                    "colorMode": "value",
+                    "graphMode": "area"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "short",
+                        "color": {
+                            "mode": "palette-classic"
+                        }
+                    }
+                }
+            },
+            {
+                "id": 4,
+                "type": "stat",
+                "title": "Training Epochs",
+                "gridPos": {
+                    "x": 12,
+                    "y": 0,
+                    "w": 4,
+                    "h": 4
+                },
+                "targets": [
+                    {
+                        "expr": "sum(bolt_ai_training_epochs_total)",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "reduceOptions": {
+                        "values": false,
+                        "calcs": [
+                            "lastNotNull"
+                        ]
+                    },
+                    "textMode": "value_and_name",
+                    "colorMode": "value",
+                    "graphMode": "area"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "short",
+                        "color": {
+                            "mode": "palette-classic"
+                        }
+                    }
+                }
+            },
+            {
+                "id": 5,
+                "type": "stat",
+                "title": "Error Rate",
+                "gridPos": {
+                    "x": 16,
+                    "y": 0,
+                    "w": 4,
+                    "h": 4
+                },
+                "targets": [
+                    {
+                        "expr": "sum(rate(bolt_ai_errors_total[5m]))",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "reduceOptions": {
+                        "values": false,
+                        "calcs": [
+                            "lastNotNull"
+                        ]
+                    },
+                    "textMode": "value_and_name",
+                    "colorMode": "background",
+                    "graphMode": "area"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "reqps",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": 0,
+                                    "color": "green"
+                                },
+                                {
+                                    "value": 0.1,
+                                    "color": "yellow"
+                                },
+                                {
+                                    "value": 1,
+                                    "color": "red"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 6,
+                "type": "stat",
+                "title": "Avg Response Time",
+                "gridPos": {
+                    "x": 20,
+                    "y": 0,
+                    "w": 4,
+                    "h": 4
+                },
+                "targets": [
+                    {
+                        "expr": "avg(rate(bolt_ai_api_request_duration_seconds_sum[5m]) / rate(bolt_ai_api_request_duration_seconds_count[5m]))",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "reduceOptions": {
+                        "values": false,
+                        "calcs": [
+                            "lastNotNull"
+                        ]
+                    },
+                    "textMode": "value_and_name",
+                    "colorMode": "background",
+                    "graphMode": "area"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "s",
+                        "decimals": 3,
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": 0,
+                                    "color": "green"
+                                },
+                                {
+                                    "value": 0.5,
+                                    "color": "yellow"
+                                },
+                                {
+                                    "value": 2,
+                                    "color": "red"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 7,
+                "type": "timeseries",
+                "title": "API Request Rate (req/s)",
+                "gridPos": {
+                    "x": 0,
+                    "y": 4,
+                    "w": 12,
+                    "h": 8
+                },
+                "targets": [
+                    {
+                        "expr": "sum(rate(bolt_ai_api_requests_total[1m])) by (method, endpoint)",
+                        "refId": "A",
+                        "legendFormat": "{{method}} {{endpoint}}"
+                    }
+                ],
+                "options": {
+                    "legend": {
+                        "displayMode": "list",
+                        "placement": "bottom",
+                        "calcs": [
+                            "mean",
+                            "max"
+                        ]
+                    }
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "reqps",
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "smooth",
+                            "fillOpacity": 10,
+                            "showPoints": "never"
+                        }
+                    }
+                }
+            },
+            {
+                "id": 8,
+                "type": "timeseries",
+                "title": "API Response Time (p50, p95, p99)",
+                "gridPos": {
+                    "x": 12,
+                    "y": 4,
+                    "w": 12,
+                    "h": 8
+                },
+                "targets": [
+                    {
+                        "expr": "histogram_quantile(0.50, sum(rate(bolt_ai_api_request_duration_seconds_bucket[5m])) by (le))",
+                        "refId": "A",
+                        "legendFormat": "p50"
+                    },
+                    {
+                        "expr": "histogram_quantile(0.95, sum(rate(bolt_ai_api_request_duration_seconds_bucket[5m])) by (le))",
+                        "refId": "B",
+                        "legendFormat": "p95"
+                    },
+                    {
+                        "expr": "histogram_quantile(0.99, sum(rate(bolt_ai_api_request_duration_seconds_bucket[5m])) by (le))",
+                        "refId": "C",
+                        "legendFormat": "p99"
+                    }
+                ],
+                "options": {
+                    "legend": {
+                        "displayMode": "list",
+                        "placement": "bottom",
+                        "calcs": [
+                            "mean",
+                            "max"
+                        ]
+                    }
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "s",
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "smooth",
+                            "fillOpacity": 10,
+                            "showPoints": "never"
+                        }
+                    }
+                }
+            },
+            {
+                "id": 9,
+                "type": "timeseries",
+                "title": "Training Loss & Validation Loss",
+                "gridPos": {
+                    "x": 0,
+                    "y": 12,
+                    "w": 12,
+                    "h": 8
+                },
+                "targets": [
+                    {
+                        "expr": "bolt_ai_training_loss",
+                        "refId": "A",
+                        "legendFormat": "Training Loss - {{trainer_id}}"
+                    },
+                    {
+                        "expr": "bolt_ai_training_val_loss",
+                        "refId": "B",
+                        "legendFormat": "Validation Loss - {{trainer_id}}"
+                    }
+                ],
+                "options": {
+                    "legend": {
+                        "displayMode": "list",
+                        "placement": "bottom",
+                        "calcs": [
+                            "mean",
+                            "last"
+                        ]
+                    }
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "short",
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "smooth",
+                            "fillOpacity": 10,
+                            "showPoints": "auto"
+                        }
+                    }
+                }
+            },
+            {
+                "id": 10,
+                "type": "timeseries",
+                "title": "Training & Validation Accuracy",
+                "gridPos": {
+                    "x": 12,
+                    "y": 12,
+                    "w": 12,
+                    "h": 8
+                },
+                "targets": [
+                    {
+                        "expr": "bolt_ai_training_accuracy",
+                        "refId": "A",
+                        "legendFormat": "Training Accuracy - {{trainer_id}}"
+                    },
+                    {
+                        "expr": "bolt_ai_training_val_accuracy",
+                        "refId": "B",
+                        "legendFormat": "Validation Accuracy - {{trainer_id}}"
+                    }
+                ],
+                "options": {
+                    "legend": {
+                        "displayMode": "list",
+                        "placement": "bottom",
+                        "calcs": [
+                            "mean",
+                            "last"
+                        ]
+                    }
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "percentunit",
+                        "min": 0,
+                        "max": 1,
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "smooth",
+                            "fillOpacity": 10,
+                            "showPoints": "auto"
+                        }
+                    }
+                }
+            },
+            {
+                "id": 11,
+                "type": "timeseries",
+                "title": "Prediction Rate by Symbol",
+                "gridPos": {
+                    "x": 0,
+                    "y": 20,
+                    "w": 12,
+                    "h": 8
+                },
+                "targets": [
+                    {
+                        "expr": "sum(rate(bolt_ai_predictions_total[5m])) by (symbol)",
+                        "refId": "A",
+                        "legendFormat": "{{symbol}}"
+                    }
+                ],
+                "options": {
+                    "legend": {
+                        "displayMode": "table",
+                        "placement": "right",
+                        "calcs": [
+                            "mean",
+                            "max",
+                            "last"
+                        ]
+                    }
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "reqps",
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "smooth",
+                            "fillOpacity": 10,
+                            "showPoints": "never"
+                        }
+                    }
+                }
+            },
+            {
+                "id": 12,
+                "type": "timeseries",
+                "title": "Prediction Latency",
+                "gridPos": {
+                    "x": 12,
+                    "y": 20,
+                    "w": 12,
+                    "h": 8
+                },
+                "targets": [
+                    {
+                        "expr": "histogram_quantile(0.50, sum(rate(bolt_ai_prediction_latency_seconds_bucket[5m])) by (le))",
+                        "refId": "A",
+                        "legendFormat": "p50"
+                    },
+                    {
+                        "expr": "histogram_quantile(0.95, sum(rate(bolt_ai_prediction_latency_seconds_bucket[5m])) by (le))",
+                        "refId": "B",
+                        "legendFormat": "p95"
+                    },
+                    {
+                        "expr": "histogram_quantile(0.99, sum(rate(bolt_ai_prediction_latency_seconds_bucket[5m])) by (le))",
+                        "refId": "C",
+                        "legendFormat": "p99"
+                    }
+                ],
+                "options": {
+                    "legend": {
+                        "displayMode": "list",
+                        "placement": "bottom",
+                        "calcs": [
+                            "mean",
+                            "max"
+                        ]
+                    }
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "s",
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "smooth",
+                            "fillOpacity": 10,
+                            "showPoints": "never"
+                        }
+                    }
+                }
+            },
+            {
+                "id": 13,
+                "type": "gauge",
+                "title": "CPU Usage",
+                "gridPos": {
+                    "x": 0,
+                    "y": 28,
+                    "w": 6,
+                    "h": 6
+                },
+                "targets": [
+                    {
+                        "expr": "bolt_ai_cpu_usage_percent",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": true
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "percent",
+                        "min": 0,
+                        "max": 100,
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": 0,
+                                    "color": "green"
+                                },
+                                {
+                                    "value": 70,
+                                    "color": "yellow"
+                                },
+                                {
+                                    "value": 90,
+                                    "color": "red"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 14,
+                "type": "gauge",
+                "title": "Memory Usage",
+                "gridPos": {
+                    "x": 6,
+                    "y": 28,
+                    "w": 6,
+                    "h": 6
+                },
+                "targets": [
+                    {
+                        "expr": "(bolt_ai_memory_usage_bytes / (bolt_ai_memory_usage_bytes + bolt_ai_memory_available_bytes)) * 100",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": true
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "percent",
+                        "min": 0,
+                        "max": 100,
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": 0,
+                                    "color": "green"
+                                },
+                                {
+                                    "value": 75,
+                                    "color": "yellow"
+                                },
+                                {
+                                    "value": 90,
+                                    "color": "red"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 15,
+                "type": "gauge",
+                "title": "Disk Usage",
+                "gridPos": {
+                    "x": 12,
+                    "y": 28,
+                    "w": 6,
+                    "h": 6
+                },
+                "targets": [
+                    {
+                        "expr": "bolt_ai_disk_usage_percent",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": true
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "percent",
+                        "min": 0,
+                        "max": 100,
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": 0,
+                                    "color": "green"
+                                },
+                                {
+                                    "value": 80,
+                                    "color": "yellow"
+                                },
+                                {
+                                    "value": 95,
+                                    "color": "red"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 16,
+                "type": "stat",
+                "title": "Instability Events",
+                "gridPos": {
+                    "x": 18,
+                    "y": 28,
+                    "w": 6,
+                    "h": 6
+                },
+                "targets": [
+                    {
+                        "expr": "sum(increase(bolt_ai_instability_events_total[1h]))",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "reduceOptions": {
+                        "values": false,
+                        "calcs": [
+                            "lastNotNull"
+                        ]
+                    },
+                    "textMode": "value_and_name",
+                    "colorMode": "background",
+                    "graphMode": "area"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "short",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": 0,
+                                    "color": "green"
+                                },
+                                {
+                                    "value": 5,
+                                    "color": "yellow"
+                                },
+                                {
+                                    "value": 10,
+                                    "color": "red"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 17,
+                "type": "timeseries",
+                "title": "Market Data Updates by Source",
+                "gridPos": {
+                    "x": 0,
+                    "y": 34,
+                    "w": 12,
+                    "h": 8
+                },
+                "targets": [
+                    {
+                        "expr": "sum(rate(bolt_ai_market_data_updates_total[5m])) by (source)",
+                        "refId": "A",
+                        "legendFormat": "{{source}}"
+                    }
+                ],
+                "options": {
+                    "legend": {
+                        "displayMode": "table",
+                        "placement": "right",
+                        "calcs": [
+                            "mean",
+                            "max",
+                            "last"
+                        ]
+                    }
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "ops",
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "smooth",
+                            "fillOpacity": 10,
+                            "showPoints": "never",
+                            "stacking": {
+                                "mode": "normal"
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "id": 18,
+                "type": "timeseries",
+                "title": "Error Rate by Type",
+                "gridPos": {
+                    "x": 12,
+                    "y": 34,
+                    "w": 12,
+                    "h": 8
+                },
+                "targets": [
+                    {
+                        "expr": "sum(rate(bolt_ai_errors_total[5m])) by (error_type)",
+                        "refId": "A",
+                        "legendFormat": "{{error_type}}"
+                    }
+                ],
+                "options": {
+                    "legend": {
+                        "displayMode": "table",
+                        "placement": "right",
+                        "calcs": [
+                            "mean",
+                            "max",
+                            "last"
+                        ]
+                    }
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "reqps",
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "smooth",
+                            "fillOpacity": 10,
+                            "showPoints": "never",
+                            "stacking": {
+                                "mode": "normal"
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "id": 19,
+                "type": "table",
+                "title": "API Endpoints Performance",
+                "gridPos": {
+                    "x": 0,
+                    "y": 42,
+                    "w": 24,
+                    "h": 8
+                },
+                "targets": [
+                    {
+                        "expr": "sum(rate(bolt_ai_api_requests_total[5m])) by (method, endpoint, status_code)",
+                        "refId": "A",
+                        "format": "table",
+                        "instant": true
+                    }
+                ],
+                "options": {
+                    "showHeader": true,
+                    "sortBy": [
+                        {
+                            "displayName": "Value",
+                            "desc": true
+                        }
+                    ]
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "custom": {
+                            "align": "auto",
+                            "displayMode": "auto"
+                        }
+                    },
+                    "overrides": [
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "Value"
+                            },
+                            "properties": [
+                                {
+                                    "id": "displayName",
+                                    "value": "Req/s"
+                                },
+                                {
+                                    "id": "unit",
+                                    "value": "reqps"
+                                },
+                                {
+                                    "id": "decimals",
+                                    "value": 2
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "folderId": 0,
+    "overwrite": true
+}

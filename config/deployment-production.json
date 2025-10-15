@@ -1,0 +1,67 @@
+{
+    "servers": {
+        "production": {
+            "host": "prod.bolt-ai.com",
+            "user": "deploy",
+            "path": "/opt/bolt-ai",
+            "port": 22,
+            "key_file": "~/.ssh/bolt-ai-production.pem"
+        }
+    },
+    "health_checks": {
+        "endpoints": [
+            "/health",
+            "/api/v1/health",
+            "/api/v1/market/data?symbols=BTCUSDT&limit=1"
+        ],
+        "timeout": 30,
+        "retries": 5,
+        "interval": 5
+    },
+    "rollback": {
+        "enabled": true,
+        "max_versions": 10,
+        "auto_rollback_on_failure": true,
+        "rollback_threshold": 0.95
+    },
+    "notifications": {
+        "slack": {
+            "webhook_url": "${SLACK_WEBHOOK_URL}",
+            "channel": "#production-deployments"
+        },
+        "email": {
+            "smtp_server": "smtp.gmail.com",
+            "smtp_port": 587,
+            "username": "${EMAIL_USERNAME}",
+            "password": "${EMAIL_PASSWORD}",
+            "to": [
+                "devops@bolt-ai.com",
+                "alerts@bolt-ai.com"
+            ]
+        }
+    },
+    "monitoring": {
+        "enabled": true,
+        "metrics_endpoint": "/metrics",
+        "log_level": "INFO",
+        "alerting": {
+            "enabled": true,
+            "channels": [
+                "slack",
+                "email",
+                "pagerduty"
+            ]
+        }
+    },
+    "security": {
+        "code_signing": {
+            "enabled": true,
+            "certificate_path": "${CERT_PATH}",
+            "certificate_password": "${CERT_PASSWORD}"
+        },
+        "encryption": {
+            "enabled": true,
+            "algorithm": "AES-256-GCM"
+        }
+    }
+}

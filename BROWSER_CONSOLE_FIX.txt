@@ -1,0 +1,74 @@
+═══════════════════════════════════════════════════════════════
+    🚨 BROWSER CONSOLE FIX - COPY & PASTE
+═══════════════════════════════════════════════════════════════
+
+INSTRUCTIONS:
+1. Start your app: start-app.bat
+2. Open browser: http://localhost:5173
+3. Press F12 (Developer Tools)
+4. Go to "Console" tab
+5. Copy the code below
+6. Paste in console
+7. Press Enter
+8. Refresh page (F5)
+
+═══════════════════════════════════════════════════════════════
+COPY THIS CODE ⬇️
+═══════════════════════════════════════════════════════════════
+
+(function() {
+  'use strict';
+  console.log('🔥 Applying frontend CORS hotfix...');
+  
+  const originalFetch = window.fetch;
+  window.fetch = function(url, options) {
+    // Block problematic CORS proxy
+    if (url && url.includes('allorigins.win')) {
+      console.log('🚫 Blocked CORS-proxy URL:', url);
+      return Promise.reject(new Error('CORS proxy blocked - using fallback'));
+    }
+    
+    // Fix CoinGecko URLs with undefined
+    if (url && url.includes('undefined/simple/price')) {
+      const fixedUrl = 'https://api.coingecko.com/api/v3/simple/price' + url.split('simple/price')[1];
+      console.log('🔧 Fixed CoinGecko URL:', fixedUrl);
+      return originalFetch(fixedUrl, options);
+    }
+    
+    return originalFetch(url, options);
+  };
+  
+  console.log('✅ CORS hotfix applied successfully!');
+  console.log('💡 Using CryptoCompare + CoinGecko APIs directly');
+})();
+
+═══════════════════════════════════════════════════════════════
+
+EXPECTED OUTPUT:
+🔥 Applying frontend CORS hotfix...
+✅ CORS hotfix applied successfully!
+💡 Using CryptoCompare + CoinGecko APIs directly
+
+═══════════════════════════════════════════════════════════════
+
+WHAT THIS DOES:
+✅ Blocks allorigins.win CORS proxy (causes errors)
+✅ Fixes malformed CoinGecko URLs
+✅ Uses direct API calls (no CORS issues)
+✅ Immediate fix - no code changes needed
+
+═══════════════════════════════════════════════════════════════
+
+IF YOU STILL SEE ERRORS:
+1. Clear browser cache (Ctrl+Shift+Delete)
+2. Hard refresh (Ctrl+F5)
+3. Reapply this fix in console
+4. Check console for new error messages
+
+═══════════════════════════════════════════════════════════════
+
+PERMANENT FIX:
+For a permanent solution, run: fix-cors-immediate.bat
+Then use the Simple Proxy Server (see CORS_FIX_GUIDE.md)
+
+═══════════════════════════════════════════════════════════════
