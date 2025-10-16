@@ -9,6 +9,11 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   base: './', // Required for Electron to load assets correctly
+  
+  // Public directory configuration
+  // Files in public/ are served at / and copied to dist/ during build
+  publicDir: 'public',
+  
   server: {
     port: 5173,
     strictPort: true,

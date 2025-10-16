@@ -29,6 +29,47 @@ if (import.meta.env.DEV) {
   });
 }
 
+// Register Service Worker (PRODUCTION ONLY)
+// This prevents SW from interfering with Vite HMR and dev server in development
+if (import.meta.env.PROD) {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((registration) => {
+          console.log('✅ Service Worker registered successfully:', registration.scope);
+          
+          // Check for updates periodically
+          setInterval(() => {
+            registration.update();
+          }, 60000); // Check every minute
+          
+          // Listen for new service worker updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New service worker available, prompt user to refresh
+                  console.log('🔄 New version available! Please refresh the page.');
+                  // You could show a notification here
+                }
+              });
+            }
+          });
+        })
+        .catch((error) => {
+          console.warn('⚠️ Service Worker registration failed:', error);
+        });
+    });
+  } else {
+    console.log('ℹ️ Service Workers are not supported in this browser');
+  }
+} else {
+  console.log('🔧 Development mode: Service Worker registration skipped');
+  console.log('💡 SW only runs in production to avoid conflicts with Vite HMR');
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
