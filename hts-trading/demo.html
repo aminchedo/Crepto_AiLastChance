@@ -28,9 +28,9 @@
         
         // Mock data
         const mockPrices = {
-            'BTC': { price: 45000, change24h: 2.5, volume: 1000000000, rsi: 65, macd: 120, signal: 100, histogram: 20 },
-            'ETH': { price: 3200, change24h: -1.2, volume: 800000000, rsi: 45, macd: -50, signal: -30, histogram: -20 },
-            'BNB': { price: 350, change24h: 3.8, volume: 200000000, rsi: 75, macd: 80, signal: 60, histogram: 20 }
+            'BTC': { price: 45000, change24h: 2.5, volume: 1000000000 },
+            'ETH': { price: 3200, change24h: -1.2, volume: 800000000 },
+            'BNB': { price: 350, change24h: 3.8, volume: 200000000 }
         };
         
         const mockSentiment = {
@@ -74,7 +74,7 @@
             }
         ];
         
-        // Components
+        // Price Card Component
         function PriceCard({ symbol, price, change24h, volume }) {
             const isPositive = change24h >= 0;
             
@@ -111,6 +111,7 @@
             ]);
         }
         
+        // RSI Gauge Component
         function RSIGauge({ rsi, trend }) {
             const getColor = () => {
                 if (rsi < 30) return '#ef4444';
@@ -134,22 +135,57 @@
                 React.createElement('div', {
                     key: 'gauge',
                     className: "flex justify-center mb-6"
-                }, React.createElement('div', {
+                }, [
+                    React.createElement('svg', {
+                        key: 'svg',
+                        viewBox: "0 0 200 120",
+                        width: "200",
+                        height: "120"
+                    }, [
+                        React.createElement('path', {
+                            key: 'bg',
+                            d: "M 30 100 A 70 70 0 0 1 170 100",
+                            fill: "none",
+                            stroke: "#374151",
+                            strokeWidth: "12",
+                            strokeLinecap: "round"
+                        }),
+                        React.createElement('path', {
+                            key: 'value',
+                            d: `M 30 100 A 70 70 0 0 1 ${30 + (140 * rsi / 100)} ${100 - (Math.sin((rsi / 100) * Math.PI) * 70)}`,
+                            fill: "none",
+                            stroke: getColor(),
+                            strokeWidth: "12",
+                            strokeLinecap: "round"
+                        }),
+                        React.createElement('text', {
+                            key: 'text',
+                            x: "100",
+                            y: "85",
+                            textAnchor: "middle",
+                            fill: "#ffffff",
+                            fontSize: "32",
+                            fontWeight: "bold"
+                        }, rsi.toFixed(1))
+                    ])
+                ]),
+                React.createElement('div', {
+                    key: 'status',
                     className: "text-center"
                 }, [
                     React.createElement('div', {
-                        key: 'value',
-                        className: "text-6xl font-bold mb-2",
-                        style: { color: getColor() }
-                    }, rsi.toFixed(1)),
-                    React.createElement('div', {
                         key: 'label',
+                        className: "text-gray-400 text-xs mb-2"
+                    }, 'Status'),
+                    React.createElement('div', {
+                        key: 'trend',
                         className: "text-white font-bold text-lg"
                     }, getTrendLabel())
-                ]))
+                ])
             ]);
         }
         
+        // Sentiment Gauge Component
         function SentimentGauge({ score, fearGreed, reddit, coinGecko, trend }) {
             const getColor = (value) => {
                 if (value < 25) return '#ef4444';
@@ -167,104 +203,55 @@
                     className: "text-gray-400 text-sm font-semibold mb-4"
                 }, '📊 Market Sentiment (Fear & Greed)'),
                 React.createElement('div', {
-                    key: 'main-gauge',
+                    key: 'gauge',
                     className: "flex justify-center mb-6"
-                }, React.createElement('div', {
-                    className: "text-center"
+                }, [
+                    React.createElement('svg', {
+                        key: 'svg',
+                        viewBox: "0 0 200 120",
+                        width: "200",
+                        height: "120"
+                    }, [
+                        React.createElement('path', {
+                            key: 'bg',
+                            d: "M 30 100 A 70 70 0 0 1 170 100",
+                            fill: "none",
+                            stroke: "#374151",
+                            strokeWidth: "12",
+                            strokeLinecap: "round"
+                        }),
+                        React.createElement('path', {
+                            key: 'value',
+                            d: `M 30 100 A 70 70 0 0 1 ${30 + (140 * score / 100)} ${100 - (Math.sin((score / 100) * Math.PI) * 70)}`,
+                            fill: "none",
+                            stroke: getColor(score),
+                            strokeWidth: "12",
+                            strokeLinecap: "round"
+                        }),
+                        React.createElement('text', {
+                            key: 'text',
+                            x: "100",
+                            y: "85",
+                            textAnchor: "middle",
+                            fill: "#ffffff",
+                            fontSize: "32",
+                            fontWeight: "bold"
+                        }, score)
+                    ])
+                ]),
+                React.createElement('div', {
+                    key: 'trend',
+                    className: "text-center mb-4"
                 }, [
                     React.createElement('div', {
-                        key: 'score',
-                        className: "text-6xl font-bold mb-2",
-                        style: { color: getColor(score) }
-                    }, score),
-                    React.createElement('div', {
-                        key: 'trend',
+                        key: 'trend-text',
                         className: "text-white font-bold text-lg uppercase"
                     }, trend)
-                ])),
-                React.createElement('div', {
-                    key: 'breakdown',
-                    className: "space-y-2"
-                }, [
-                    React.createElement('div', {
-                        key: 'fear-greed',
-                        className: "flex justify-between items-center text-sm"
-                    }, [
-                        React.createElement('span', {
-                            key: 'label',
-                            className: "text-gray-400"
-                        }, 'Fear & Greed'),
-                        React.createElement('div', {
-                            key: 'bar',
-                            className: "flex items-center gap-2"
-                        }, [
-                            React.createElement('div', {
-                                key: 'bg',
-                                className: "w-32 bg-gray-700 rounded-full h-2"
-                            }, React.createElement('div', {
-                                className: "bg-blue-500 h-2 rounded-full",
-                                style: { width: `${fearGreed}%` }
-                            })),
-                            React.createElement('span', {
-                                key: 'value',
-                                className: "text-blue-400 font-bold w-8"
-                            }, fearGreed)
-                        ])
-                    ]),
-                    React.createElement('div', {
-                        key: 'reddit',
-                        className: "flex justify-between items-center text-sm"
-                    }, [
-                        React.createElement('span', {
-                            key: 'label',
-                            className: "text-gray-400"
-                        }, 'Reddit'),
-                        React.createElement('div', {
-                            key: 'bar',
-                            className: "flex items-center gap-2"
-                        }, [
-                            React.createElement('div', {
-                                key: 'bg',
-                                className: "w-32 bg-gray-700 rounded-full h-2"
-                            }, React.createElement('div', {
-                                className: "bg-orange-500 h-2 rounded-full",
-                                style: { width: `${reddit}%` }
-                            })),
-                            React.createElement('span', {
-                                key: 'value',
-                                className: "text-orange-400 font-bold w-8"
-                            }, reddit)
-                        ])
-                    ]),
-                    React.createElement('div', {
-                        key: 'coingecko',
-                        className: "flex justify-between items-center text-sm"
-                    }, [
-                        React.createElement('span', {
-                            key: 'label',
-                            className: "text-gray-400"
-                        }, 'CoinGecko'),
-                        React.createElement('div', {
-                            key: 'bar',
-                            className: "flex items-center gap-2"
-                        }, [
-                            React.createElement('div', {
-                                key: 'bg',
-                                className: "w-32 bg-gray-700 rounded-full h-2"
-                            }, React.createElement('div', {
-                                className: "bg-yellow-500 h-2 rounded-full",
-                                style: { width: `${coinGecko}%` }
-                            })),
-                            React.createElement('span', {
-                                key: 'value',
-                                className: "text-yellow-400 font-bold w-8"
-                            }, coinGecko)
-                        ])
-                    ])
                 ])
             ]);
         }
         
+        // News Card Component
         function NewsCard({ title, description, image, url, source, published, sentiment }) {
             const getSentimentColor = () => {
                 switch (sentiment) {
@@ -284,8 +271,8 @@
             
             return React.createElement('a', {
                 href: url,
-                target: '_blank',
-                rel: 'noopener noreferrer',
+                target: "_blank",
+                rel: "noopener noreferrer",
                 className: `block bg-gray-900 border ${getSentimentColor()} rounded-lg overflow-hidden hover:border-blue-500 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20`
             }, [
                 image && React.createElement('img', {
@@ -331,29 +318,35 @@
                                 key: 'label',
                                 className: "text-gray-400"
                             }, getSentimentLabel()),
-                            React.createElement('span', { key: 'icon' }, '🔗')
+                            React.createElement('span', {
+                                key: 'icon',
+                                className: "text-gray-500"
+                            }, '↗')
                         ])
                     ])
                 ])
             ]);
         }
         
+        // Main Dashboard Component
         function Dashboard() {
             const [activeTab, setActiveTab] = useState('overview');
             const [prices, setPrices] = useState(mockPrices);
+            const [sentiment, setSentiment] = useState(mockSentiment);
+            const [news, setNews] = useState(mockNews);
+            const [connected, setConnected] = useState(true);
             
+            // Simulate real-time updates
             useEffect(() => {
-                // Simulate real-time price updates
                 const interval = setInterval(() => {
                     setPrices(prev => {
                         const newPrices = {};
                         Object.entries(prev).forEach(([symbol, data]) => {
-                            const change = (Math.random() - 0.5) * 0.01;
+                            const change = (Math.random() - 0.5) * 0.02;
                             newPrices[symbol] = {
                                 ...data,
                                 price: data.price * (1 + change),
-                                change24h: (Math.random() - 0.5) * 10,
-                                rsi: Math.max(0, Math.min(100, data.rsi + (Math.random() - 0.5) * 5))
+                                change24h: (Math.random() - 0.5) * 10
                             };
                         });
                         return newPrices;
@@ -366,6 +359,37 @@
             return React.createElement('div', {
                 className: "min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-white"
             }, [
+                // Status Bar
+                React.createElement('div', {
+                    key: 'status',
+                    className: "bg-gray-900/80 border-b border-gray-700 px-6 py-3 flex justify-between items-center"
+                }, [
+                    React.createElement('div', {
+                        key: 'connection',
+                        className: "flex items-center gap-2"
+                    }, [
+                        React.createElement('span', {
+                            key: 'icon',
+                            className: "text-green-500 animate-pulse"
+                        }, '🟢'),
+                        React.createElement('span', {
+                            key: 'text',
+                            className: "text-green-400 text-sm font-semibold"
+                        }, 'Connected')
+                    ]),
+                    React.createElement('div', {
+                        key: 'time',
+                        className: "flex items-center gap-2 text-gray-400 text-sm"
+                    }, [
+                        React.createElement('span', { key: 'icon' }, '🕐'),
+                        React.createElement('span', { key: 'text' }, 'Updated: just now')
+                    ]),
+                    React.createElement('div', {
+                        key: 'version',
+                        className: "text-xs text-gray-500"
+                    }, 'HTS Trading System v1.0')
+                ]),
+                
                 // Header
                 React.createElement('div', {
                     key: 'header',
@@ -385,49 +409,56 @@
                 React.createElement('div', {
                     key: 'tabs',
                     className: "sticky top-0 bg-gray-900/95 border-b border-gray-800 px-6 z-10"
-                }, React.createElement('div', {
-                    className: "flex gap-2 py-4"
                 }, [
-                    React.createElement('button', {
-                        key: 'overview',
-                        onClick: () => setActiveTab('overview'),
-                        className: `px-4 py-2 rounded-lg font-semibold transition-all ${
-                            activeTab === 'overview'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                        }`
-                    }, '📊 Overview'),
-                    React.createElement('button', {
-                        key: 'charts',
-                        onClick: () => setActiveTab('charts'),
-                        className: `px-4 py-2 rounded-lg font-semibold transition-all ${
-                            activeTab === 'charts'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                        }`
-                    }, '📈 Charts'),
-                    React.createElement('button', {
-                        key: 'news',
-                        onClick: () => setActiveTab('news'),
-                        className: `px-4 py-2 rounded-lg font-semibold transition-all ${
-                            activeTab === 'news'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                        }`
-                    }, '📰 News')
-                ])),
+                    React.createElement('div', {
+                        key: 'tab-container',
+                        className: "flex gap-2 py-4"
+                    }, [
+                        React.createElement('button', {
+                            key: 'overview',
+                            onClick: () => setActiveTab('overview'),
+                            className: `px-4 py-2 rounded-lg font-semibold transition-all ${
+                                activeTab === 'overview'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                            }`
+                        }, '📊 Overview'),
+                        React.createElement('button', {
+                            key: 'charts',
+                            onClick: () => setActiveTab('charts'),
+                            className: `px-4 py-2 rounded-lg font-semibold transition-all ${
+                                activeTab === 'charts'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                            }`
+                        }, '📈 Charts'),
+                        React.createElement('button', {
+                            key: 'news',
+                            onClick: () => setActiveTab('news'),
+                            className: `px-4 py-2 rounded-lg font-semibold transition-all ${
+                                activeTab === 'news'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                            }`
+                        }, '📰 News')
+                    ])
+                ]),
                 
                 // Main Content
                 React.createElement('div', {
                     key: 'content',
                     className: "p-6"
-                }, activeTab === 'overview' ? [
+                }, [
                     // Overview Tab
-                    React.createElement('div', {
-                        key: 'prices',
+                    activeTab === 'overview' && React.createElement('div', {
+                        key: 'overview',
                         className: "space-y-8"
                     }, [
-                        React.createElement('div', { key: 'prices-section' }, [
+                        // Price Cards
+                        React.createElement('div', {
+                            key: 'prices',
+                            className: ""
+                        }, [
                             React.createElement('h2', {
                                 key: 'title',
                                 className: "text-2xl font-bold mb-4"
@@ -445,24 +476,32 @@
                                 })
                             ))
                         ]),
-                        React.createElement('div', { key: 'sentiment-section' }, [
+                        
+                        // Sentiment
+                        React.createElement('div', {
+                            key: 'sentiment',
+                            className: ""
+                        }, [
                             React.createElement('h2', {
                                 key: 'title',
                                 className: "text-2xl font-bold mb-4"
                             }, 'Market Sentiment Analysis'),
                             React.createElement(SentimentGauge, {
                                 key: 'gauge',
-                                score: mockSentiment.overallScore,
-                                fearGreed: mockSentiment.fearGreed,
-                                reddit: mockSentiment.redditSentiment,
-                                coinGecko: mockSentiment.coinGeckoSentiment,
-                                trend: mockSentiment.trend
+                                score: sentiment.overallScore,
+                                fearGreed: sentiment.fearGreed,
+                                reddit: sentiment.redditSentiment,
+                                coinGecko: sentiment.coinGeckoSentiment,
+                                trend: sentiment.trend
                             })
                         ])
-                    ])
-                ] : activeTab === 'charts' ? [
+                    ]),
+                    
                     // Charts Tab
-                    React.createElement('div', { key: 'charts-content' }, [
+                    activeTab === 'charts' && React.createElement('div', {
+                        key: 'charts',
+                        className: ""
+                    }, [
                         React.createElement('h2', {
                             key: 'title',
                             className: "text-2xl font-bold mb-4"
@@ -473,31 +512,34 @@
                         }, Object.entries(prices).map(([symbol, data]) => 
                             React.createElement('div', {
                                 key: `rsi-${symbol}`,
-                                className: "space-y-4"
+                                className: ""
                             }, [
                                 React.createElement('h3', {
                                     key: 'title',
-                                    className: "text-lg font-semibold"
+                                    className: "text-lg font-semibold mb-3"
                                 }, `${symbol} - RSI`),
                                 React.createElement(RSIGauge, {
                                     key: 'gauge',
-                                    rsi: data.rsi,
-                                    trend: data.rsi > 70 ? 'overbought' : data.rsi < 30 ? 'oversold' : 'neutral'
+                                    rsi: 30 + Math.random() * 40,
+                                    trend: 'neutral'
                                 })
                             ])
                         ))
-                    ])
-                ] : [
+                    ]),
+                    
                     // News Tab
-                    React.createElement('div', { key: 'news-content' }, [
+                    activeTab === 'news' && React.createElement('div', {
+                        key: 'news',
+                        className: ""
+                    }, [
                         React.createElement('h2', {
                             key: 'title',
                             className: "text-2xl font-bold mb-4"
                         }, '📰 Latest Crypto News'),
                         React.createElement('div', {
-                            key: 'news-grid',
+                            key: 'articles',
                             className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                        }, mockNews.map(article => 
+                        }, news.map(article => 
                             React.createElement(NewsCard, {
                                 key: article.id,
                                 title: article.title,
@@ -517,6 +559,7 @@
         // Render the app
         ReactDOM.render(React.createElement(Dashboard), document.getElementById('root'));
     </script>
+    
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </body>
 </html>
