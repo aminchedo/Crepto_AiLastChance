@@ -92,7 +92,7 @@ async def get_cmc_listings(
     """
     try:
         headers = {
-            "X-CMC_PRO_API_KEY": "b54bcf4d-1bca-4e8e-9a24-22ff2c3d462c",
+            "X-CMC_PRO_API_KEY": settings.API_KEY_COINMARKETCAP,
             "Accept": "application/json"
         }
         
@@ -136,7 +136,7 @@ async def get_cmc_quotes(
     """
     try:
         headers = {
-            "X-CMC_PRO_API_KEY": "b54bcf4d-1bca-4e8e-9a24-22ff2c3d462c",
+            "X-CMC_PRO_API_KEY": settings.API_KEY_COINMARKETCAP,
             "Accept": "application/json"
         }
         
@@ -179,10 +179,9 @@ async def get_whale_transactions(
     
     Note: Requires a paid Whale Alert API key
     """
-    # TODO: Add your Whale Alert API key to environment variables
-    whale_alert_key = "YOUR_WHALEALERT_KEY"  # Replace with actual key
+    whale_alert_key = settings.WHALEALERT_KEY
     
-    if whale_alert_key == "YOUR_WHALEALERT_KEY":
+    if not whale_alert_key:
         return {
             "data": {
                 "status": "info",
@@ -239,7 +238,7 @@ async def get_crypto_news(
             "language": "en",
             "sortBy": "publishedAt",
             "pageSize": page_size,
-            "apiKey": "968a5e25552b4cb5ba3280361d8444ab"
+            "apiKey": settings.NEWSAPI_KEY
         }
         
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
@@ -381,7 +380,7 @@ async def proxy_health():
     
     # Test CoinMarketCap
     try:
-        headers = {"X-CMC_PRO_API_KEY": "b54bcf4d-1bca-4e8e-9a24-22ff2c3d462c"}
+        headers = {"X-CMC_PRO_API_KEY": settings.API_KEY_COINMARKETCAP}
         async with httpx.AsyncClient(timeout=httpx.Timeout(5.0)) as client:
             response = await client.get(
                 "https://pro-api.coinmarketcap.com/v1/key/info",

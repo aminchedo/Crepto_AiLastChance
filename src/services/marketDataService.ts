@@ -1,7 +1,41 @@
+import axios, { AxiosError } from 'axios';
+import { handleError, logError } from '../utils/errorHandler';
 import { MarketData, CandlestickData, TechnicalIndicators, NewsItem } from '../types';
-import { realDataService } from './realDataService';
-import CryptoDataOrchestrator from './crypto/CryptoDataOrchestrator';
-import { FEATURE_FLAGS } from '../config/cryptoApiConfig';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    logError('Request Interceptor', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    const apiError = handleError(error);
+    logError('API Response Error', apiError);
+    return Promise.reject(apiError);
+  }
+);
 
 class MarketDataService {
   private ws: WebSocket | null = null;
@@ -15,45 +49,51 @@ class MarketDataService {
   ];
 
   async initialize(): Promise<void> {
-    // Initialize with real data
-    await this.loadRealData();
-    this.startRealTimeUpdates();
+    try {
+      await this.loadRealData();
+      this.startRealTimeUpdates();
+    } catch (error) {
+      logError('MarketDataService initialization', error);
+      await this.loadFallbackData();
+    }
   }
 
   private async loadRealData(): Promise<void> {
     try {
-      if (FEATURE_FLAGS.USE_REAL_APIS) {
-        // Use new secure API services
-        const dashboardData = await CryptoDataOrchestrator.getDashboardData();
-        const marketData = this.convertCryptoPricesToMarketData(dashboardData.prices);
+      // Try to get data from backend API first
+      const response = await apiClient.get('/market/overview');
+      const marketData = response.data.data || response.data;
+      
+      if (Array.isArray(marketData)) {
         marketData.forEach(item => this.cache.set(item.symbol, item));
         this.notifySubscribers();
-      } else {
-        // Use legacy real data service
-        const marketData = await realDataService.getCoinMarketCapData();
-        marketData.forEach(item => this.cache.set(item.symbol, item));
-        this.notifySubscribers();
+        return;
       }
+      
+      // Fallback to individual symbol requests
+      await this.loadSymbolData();
     } catch (error) {
-      console.error('Primary data source failed, trying fallback:', error);
-      try {
-        if (FEATURE_FLAGS.USE_REAL_APIS) {
-          // Fallback to legacy service
-          const marketData = await realDataService.getCoinGeckoData();
-          marketData.forEach(item => this.cache.set(item.symbol, item));
-          this.notifySubscribers();
-        } else {
-          // Fallback to CoinGecko
-          const marketData = await realDataService.getCoinGeckoData();
-          marketData.forEach(item => this.cache.set(item.symbol, item));
-          this.notifySubscribers();
-        }
-      } catch (fallbackError) {
-        console.error('All market data sources failed:', fallbackError);
-        // Load minimal mock data as last resort
-        await this.loadFallbackData();
-      }
+      logError('loadRealData', error);
+      throw error;
     }
+  }
+
+  private async loadSymbolData(): Promise<void> {
+    const promises = this.SYMBOLS.map(async (symbol) => {
+      try {
+        const response = await apiClient.get(`/market/${symbol}`);
+        const data = response.data.data || response.data;
+        if (data && data.symbol) {
+          this.cache.set(data.symbol, data);
+        }
+      } catch (error) {
+        logError(`loadSymbolData for ${symbol}`, error);
+        // Continue with other symbols
+      }
+    });
+
+    await Promise.allSettled(promises);
+    this.notifySubscribers();
   }
 
   private async loadFallbackData(): Promise<void> {
@@ -70,6 +110,19 @@ class MarketDataService {
         high24h: 43800.50,
         low24h: 41950.25,
         timestamp: Date.now()
+      },
+      {
+        id: 'ethereum',
+        symbol: 'ETH',
+        name: 'Ethereum',
+        price: 2650.30,
+        change24h: 85.20,
+        changePercent24h: 3.32,
+        volume24h: 15000000000,
+        marketCap: 320000000000,
+        high24h: 2680.50,
+        low24h: 2565.10,
+        timestamp: Date.now()
       }
     ];
 
@@ -81,25 +134,14 @@ class MarketDataService {
     // Update market data every 30 seconds
     setInterval(() => {
       this.refreshMarketData();
-    }, 30000); // 30 seconds
+    }, 30000);
   }
 
   private async refreshMarketData(): Promise<void> {
     try {
-      if (FEATURE_FLAGS.USE_REAL_APIS) {
-        // Use new secure API services
-        const dashboardData = await CryptoDataOrchestrator.getDashboardData();
-        const marketData = this.convertCryptoPricesToMarketData(dashboardData.prices);
-        marketData.forEach(item => this.cache.set(item.symbol, item));
-        this.notifySubscribers();
-      } else {
-        // Use legacy service
-        const marketData = await realDataService.getCoinMarketCapData();
-        marketData.forEach(item => this.cache.set(item.symbol, item));
-        this.notifySubscribers();
-      }
+      await this.loadRealData();
     } catch (error) {
-      console.error('Failed to refresh market data:', error);
+      logError('refreshMarketData', error);
       // Continue with cached data
     }
   }
@@ -120,12 +162,24 @@ class MarketDataService {
     this.subscribers.forEach(callback => callback(data));
   }
 
+  async getMarketData(symbol: string): Promise<MarketData> {
+    try {
+      const response = await apiClient.get(`/market/${symbol}`);
+      return response.data.data || response.data;
+    } catch (error) {
+      logError('getMarketData', error);
+      throw error;
+    }
+  }
+
   async getCandlestickData(symbol: string, interval: string = '1h'): Promise<CandlestickData[]> {
     try {
-      // Get real historical data from CryptoCompare
-      return await realDataService.getCryptoCompareHistorical(symbol, 100);
+      const response = await apiClient.get(`/market/${symbol}/history`, {
+        params: { period: interval },
+      });
+      return response.data.data || response.data;
     } catch (error) {
-      console.error('Failed to get historical data:', error);
+      logError('getCandlestickData', error);
       // Return mock data as fallback
       return this.generateMockCandlestickData(symbol);
     }
@@ -149,10 +203,10 @@ class MarketDataService {
 
   async getTechnicalIndicators(symbol: string): Promise<TechnicalIndicators> {
     try {
-      const candlestickData = await this.getCandlestickData(symbol);
-      return realDataService.calculateTechnicalIndicators(candlestickData);
+      const response = await apiClient.get(`/market/${symbol}/indicators`);
+      return response.data.data || response.data;
     } catch (error) {
-      console.error('Failed to calculate technical indicators:', error);
+      logError('getTechnicalIndicators', error);
       // Return mock indicators as fallback
       return this.getMockTechnicalIndicators(symbol);
     }
@@ -181,53 +235,27 @@ class MarketDataService {
 
   async getNews(): Promise<NewsItem[]> {
     try {
-      if (FEATURE_FLAGS.USE_REAL_APIS) {
-        // Use new secure API services
-        const newsData = await CryptoDataOrchestrator.getNewsAndSentiment();
-        return this.convertNewsArticlesToNewsItems(newsData.news);
-      } else {
-        // Use legacy service
-        return await realDataService.getCryptoNews();
-      }
+      const response = await apiClient.get('/news');
+      const newsData = response.data.data || response.data;
+      return Array.isArray(newsData) ? newsData : newsData.articles || [];
     } catch (error) {
-      console.error('Failed to get news:', error);
+      logError('getNews', error);
       return [];
     }
   }
 
-  /**
-   * Convert CryptoPrice array to MarketData array
-   */
-  private convertCryptoPricesToMarketData(cryptoPrices: any[]): MarketData[] {
-    return cryptoPrices.map(crypto => ({
-      id: crypto.id,
-      symbol: crypto.symbol,
-      name: crypto.name,
-      price: crypto.current_price,
-      change24h: crypto.price_change_24h,
-      changePercent24h: crypto.price_change_percentage_24h,
-      volume24h: crypto.total_volume,
-      marketCap: crypto.market_cap,
-      high24h: crypto.high_24h,
-      low24h: crypto.low_24h,
-      timestamp: Date.now()
-    }));
-  }
-
-  /**
-   * Convert NewsArticle array to NewsItem array
-   */
-  private convertNewsArticlesToNewsItems(newsArticles: any[]): NewsItem[] {
-    return newsArticles.map(article => ({
-      id: article.id,
-      title: article.title,
-      description: article.description,
-      url: article.url,
-      publishedAt: article.publishedAt,
-      source: article.source?.name || 'Unknown',
-      sentiment: article.sentiment || 'neutral'
-    }));
+  async getPriceHistory(symbol: string, period: string): Promise<CandlestickData[]> {
+    try {
+      const response = await apiClient.get(`/market/${symbol}/history`, {
+        params: { period },
+      });
+      return response.data.data || response.data;
+    } catch (error) {
+      logError('getPriceHistory', error);
+      throw error;
+    }
   }
 }
 
 export const marketDataService = new MarketDataService();
+export default apiClient;
