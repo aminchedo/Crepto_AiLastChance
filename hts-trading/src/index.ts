@@ -86,7 +86,7 @@ io.on('connection', (socket) => {
 });
 
 // Start server
-const PORT = 3002;
+const PORT = 8081;
 httpServer.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════╗

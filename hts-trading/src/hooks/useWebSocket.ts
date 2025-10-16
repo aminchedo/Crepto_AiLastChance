@@ -42,7 +42,7 @@ export const useWebSocket = () => {
 
   useEffect(() => {
     // Connect to backend
-    socketRef.current = io('http://localhost:3001', {
+    socketRef.current = io('http://localhost:8081', {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
