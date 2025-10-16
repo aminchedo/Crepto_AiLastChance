@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline - Crypto AI Trading System</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .container {
+        text-align: center;
+        max-width: 500px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+
+      .icon {
+        font-size: 72px;
+        margin-bottom: 20px;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.7;
+          transform: scale(0.95);
+        }
+      }
+
+      h1 {
+        font-size: 32px;
+        margin-bottom: 16px;
+        font-weight: 700;
+      }
+
+      p {
+        font-size: 18px;
+        line-height: 1.6;
+        margin-bottom: 24px;
+        opacity: 0.9;
+      }
+
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 32px;
+      }
+
+      button {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: #fff;
+        padding: 14px 28px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+
+      button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .status {
+        margin-top: 20px;
+        font-size: 14px;
+        opacity: 0.8;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+      }
+
+      .online {
+        color: #4ade80;
+      }
+
+      .offline {
+        color: #fbbf24;
+      }
+
+      @media (max-width: 600px) {
+        .container {
+          padding: 30px 20px;
+        }
+
+        h1 {
+          font-size: 24px;
+        }
+
+        p {
+          font-size: 16px;
+        }
+
+        .icon {
+          font-size: 56px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon">📡</div>
+      <h1>You're Offline</h1>
+      <p>
+        It looks like you've lost your internet connection. The Crypto AI Trading System
+        requires an active connection to fetch real-time market data.
+      </p>
+      <p>
+        Please check your network connection and try again.
+      </p>
+      
+      <div class="actions">
+        <button onclick="window.location.reload()">
+          🔄 Try Again
+        </button>
+        <button onclick="checkConnection()">
+          🔍 Check Connection
+        </button>
+      </div>
+
+      <div class="status" id="status">
+        <span class="offline">● Offline</span>
+      </div>
+    </div>
+
+    <script>
+      // Check connection status
+      function updateStatus() {
+        const statusEl = document.getElementById('status');
+        if (navigator.onLine) {
+          statusEl.innerHTML = '<span class="online">● Online - Click "Try Again" to reload</span>';
+        } else {
+          statusEl.innerHTML = '<span class="offline">● Offline</span>';
+        }
+      }
+
+      function checkConnection() {
+        updateStatus();
+        if (navigator.onLine) {
+          // Try to fetch a simple resource to verify actual connectivity
+          fetch('/', { method: 'HEAD', cache: 'no-cache' })
+            .then(() => {
+              alert('Connection restored! Click "Try Again" to reload the app.');
+              updateStatus();
+            })
+            .catch(() => {
+              alert('Still no connection. Please check your network settings.');
+            });
+        } else {
+          alert('Your device reports being offline. Please check your network settings.');
+        }
+      }
+
+      // Listen for online/offline events
+      window.addEventListener('online', () => {
+        updateStatus();
+        // Auto-reload when connection is restored
+        setTimeout(() => {
+          if (confirm('Connection restored! Reload the app now?')) {
+            window.location.reload();
+          }
+        }, 500);
+      });
+
+      window.addEventListener('offline', updateStatus);
+
+      // Initial status check
+      updateStatus();
+
+      // Periodic connection check
+      setInterval(updateStatus, 5000);
+    </script>
+  </body>
+</html>
