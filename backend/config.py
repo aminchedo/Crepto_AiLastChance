@@ -7,16 +7,17 @@ from pydantic import ConfigDict
 
 class Settings(BaseSettings):
     model_config = ConfigDict(
-        env_file="../.env",
+        env_file=".env",
         case_sensitive=True,
         extra="ignore"
     )
+    
     # Application
     APP_NAME: str = "Bolt AI Crypto API"
     APP_VERSION: str = "1.0.0"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
-    API_PREFIX: str = "/api"
+    API_PREFIX: str = "/api/v1"
 
     # Server
     HOST: str = "0.0.0.0"
@@ -34,6 +35,7 @@ class Settings(BaseSettings):
 
     # Security
     SECRET_KEY: str = "dev-secret-key-change-in-production"
+    JWT_SECRET: str = "dev-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -41,6 +43,11 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
     CORS_CREDENTIALS: bool = True
+
+    # API Keys
+    API_KEY_COINMARKETCAP: str = ""
+    API_KEY_COINGECKO: str = ""
+    API_KEY_CRYPTOCOMPARE: str = ""
 
     # External APIs
     COINGECKO_API_URL: str = "https://api.coingecko.com/api/v3"
@@ -75,7 +82,6 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> List[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
-
 
 
 settings = Settings()

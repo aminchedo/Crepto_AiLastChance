@@ -19,19 +19,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      // Proxy for standalone proxy server (alternative)
-      '/proxy-api': {
-        target: 'http://localhost:3002',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/proxy-api/, '/api'),
-        secure: false,
-      },
     },
   },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {

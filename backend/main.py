@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 import structlog
 from api import (admin, alerts, auth, export, market, monitoring, predictions,
-                 signals, websocket)
+                 proxy, signals, websocket)
 from db.database import close_db, init_db
 from db.redis_client import redis_client
 from fastapi import FastAPI
@@ -71,7 +71,14 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
-    allow_credentials=setting# Include routers
+    allow_credentials=settings.CORS_CREDENTIALS,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["*"],
+    expose_headers=["Content-Length", "X-JSON-Response", "Authorization"],
+    max_age=600,
+)
+
+# Include routers
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(market.router, prefix=settings.API_PREFIX)
 app.include_router(predictions.router, prefix=settings.API_PREFIX)
@@ -82,7 +89,6 @@ app.include_router(admin.router, prefix=settings.API_PREFIX)
 app.include_router(monitoring.router, prefix=settings.API_PREFIX)
 app.include_router(export.router, prefix=settings.API_PREFIX)
 app.include_router(proxy.router, prefix=settings.API_PREFIX)  # API Proxy for CORS-free external calls
-app.include_router(health.router)ude_router(export.router, prefix=settings.API_PREFIX)
 app.include_router(health.router)
 
 
