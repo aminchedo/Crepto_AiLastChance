@@ -56,6 +56,8 @@ self.addEventListener('fetch', (event) => {
     '/@vite',
     '/@fs',
     '/__vite',
+    '__vite_ping',
+    '/__webpack_hmr',
     '/node_modules',
     '/sockjs-node',
     '/@react-refresh',
