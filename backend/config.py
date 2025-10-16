@@ -4,13 +4,13 @@ from typing import List
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
 
-
 class Settings(BaseSettings):
     model_config = ConfigDict(
-        env_file="../.env",
+        env_file=".env",
         case_sensitive=True,
         extra="ignore"
     )
+    
     # Application
     APP_NAME: str = "Bolt AI Crypto API"
     APP_VERSION: str = "1.0.0"
@@ -34,6 +34,7 @@ class Settings(BaseSettings):
 
     # Security
     SECRET_KEY: str = "dev-secret-key-change-in-production"
+    JWT_SECRET: str = "dev-secret-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -43,6 +44,11 @@ class Settings(BaseSettings):
     CORS_CREDENTIALS: bool = True
 
     # External APIs
+    API_KEY_COINMARKETCAP: str = ""
+    API_KEY_COINGECKO: str = ""
+    API_KEY_CRYPTOCOMPARE: str = ""
+    WHALEALERT_KEY: str = ""
+    NEWSAPI_KEY: str = ""
     COINGECKO_API_URL: str = "https://api.coingecko.com/api/v3"
     BINANCE_API_URL: str = "https://api.binance.com/api/v3"
     BINANCE_WS_URL: str = "wss://stream.binance.com:9443/ws"
