@@ -2,6 +2,8 @@ import { MarketData, CandlestickData, TechnicalIndicators, NewsItem } from '../t
 import { realDataService } from './realDataService';
 import CryptoDataOrchestrator from './crypto/CryptoDataOrchestrator';
 import { FEATURE_FLAGS } from '../config/cryptoApiConfig';
+import apiClient from './apiClient';
+import { logError } from '../utils/errorHandler';
 
 class MarketDataService {
   private ws: WebSocket | null = null;
@@ -122,12 +124,21 @@ class MarketDataService {
 
   async getCandlestickData(symbol: string, interval: string = '1h'): Promise<CandlestickData[]> {
     try {
-      // Get real historical data from CryptoCompare
-      return await realDataService.getCryptoCompareHistorical(symbol, 100);
+      // Try backend API first
+      const response = await apiClient.get(`/market/${symbol}/history`, {
+        params: { period: interval }
+      });
+      return response.data;
     } catch (error) {
-      console.error('Failed to get historical data:', error);
-      // Return mock data as fallback
-      return this.generateMockCandlestickData(symbol);
+      logError('getCandlestickData', error);
+      try {
+        // Fallback to external API
+        return await realDataService.getCryptoCompareHistorical(symbol, 100);
+      } catch (fallbackError) {
+        logError('getCandlestickData fallback', fallbackError);
+        // Return mock data as last resort
+        return this.generateMockCandlestickData(symbol);
+      }
     }
   }
 
@@ -181,17 +192,24 @@ class MarketDataService {
 
   async getNews(): Promise<NewsItem[]> {
     try {
-      if (FEATURE_FLAGS.USE_REAL_APIS) {
-        // Use new secure API services
-        const newsData = await CryptoDataOrchestrator.getNewsAndSentiment();
-        return this.convertNewsArticlesToNewsItems(newsData.news);
-      } else {
-        // Use legacy service
-        return await realDataService.getCryptoNews();
-      }
+      // Try backend API first
+      const response = await apiClient.get('/news/crypto');
+      return response.data.articles || [];
     } catch (error) {
-      console.error('Failed to get news:', error);
-      return [];
+      logError('getNews', error);
+      try {
+        if (FEATURE_FLAGS.USE_REAL_APIS) {
+          // Use new secure API services
+          const newsData = await CryptoDataOrchestrator.getNewsAndSentiment();
+          return this.convertNewsArticlesToNewsItems(newsData.news);
+        } else {
+          // Use legacy service
+          return await realDataService.getCryptoNews();
+        }
+      } catch (fallbackError) {
+        logError('getNews fallback', fallbackError);
+        return [];
+      }
     }
   }
 
