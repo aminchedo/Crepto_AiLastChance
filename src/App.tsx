@@ -17,6 +17,18 @@ import { aiPredictionService } from './services/aiPredictionService';
 import { MarketData, CandlestickData, TechnicalIndicators, PredictionData, TrainingMetrics } from './types';
 import { Brain, BarChart3, Wallet, Newspaper, Settings, Activity, TrendingUp } from 'lucide-react';
 
+// HTS Trading System Components
+import StatusBar from './components/StatusBar';
+import Navbar from './components/Navbar';
+import DashboardView from './components/DashboardView';
+import ChartView from './components/ChartView';
+import TrainingView from './components/TrainingView';
+import PortfolioView from './components/PortfolioView';
+import NewsView from './components/NewsView';
+import SettingsView from './components/SettingsView';
+import useWebSocket from './hooks/useWebSocket';
+import { WebSocketData, ViewType } from './types';
+
 function AppContent() {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
   const [selectedSymbol, setSelectedSymbol] = useState('BTC');
@@ -27,6 +39,11 @@ function AppContent() {
   const [currentMetrics, setCurrentMetrics] = useState<TrainingMetrics>();
   const [trainingHistory, setTrainingHistory] = useState<TrainingMetrics[]>([]);
   const [activeView, setActiveView] = useState<'dashboard' | 'training' | 'portfolio' | 'news' | 'crypto' | 'settings'>('dashboard');
+  
+  // HTS Trading System WebSocket integration
+  const { priceData, sentiment, news, connected, lastUpdate }: WebSocketData = useWebSocket();
+  const [htsActiveView, setHtsActiveView] = useState<ViewType>('dashboard');
+  const [isLoading, setIsLoading] = useState(true);
   
   // Get feature flags
   const {
@@ -46,6 +63,16 @@ function AppContent() {
     isQuantumAIEnabled,
     isBlockchainAnalysisEnabled
   } = useFeatureFlags();
+
+  // Extract symbols from HTS price data
+  const htsSymbols = Array.from(priceData.keys()).sort();
+
+  // Set loading state for HTS system
+  useEffect(() => {
+    if (connected && priceData.size > 0) {
+      setIsLoading(false);
+    }
+  }, [connected, priceData.size]);
 
   useEffect(() => {
     // Initialize services
@@ -137,8 +164,49 @@ function AppContent() {
     { id: 'settings', label: 'Settings', icon: Settings, enabled: true },
   ].filter(item => item.enabled);
 
+  // Render HTS Trading System view
+  const renderHtsView = () => {
+    switch (htsActiveView) {
+      case 'dashboard':
+        return (
+          <DashboardView
+            priceData={priceData}
+            sentiment={sentiment}
+            news={news}
+            symbols={htsSymbols}
+            isLoading={isLoading}
+          />
+        );
+      case 'charts':
+        return (
+          <ChartView
+            selectedSymbol={selectedSymbol}
+            priceData={priceData}
+            isLoading={isLoading}
+          />
+        );
+      case 'training':
+        return <TrainingView isLoading={isLoading} />;
+      case 'portfolio':
+        return <PortfolioView priceData={priceData} isLoading={isLoading} />;
+      case 'news':
+        return <NewsView news={news} isLoading={isLoading} />;
+      case 'settings':
+        return <SettingsView />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
+        {/* Status Bar for HTS System */}
+        <StatusBar 
+          connected={connected} 
+          lastUpdate={lastUpdate}
+          isLoading={isLoading}
+        />
+
         {/* Header */}
         <header className="bg-gray-900 border-b border-gray-800">
           <div className="flex items-center justify-between px-6 py-4">
@@ -146,7 +214,7 @@ function AppContent() {
               <div className="flex items-center space-x-2">
                 <Brain className="text-blue-400" size={32} />
                 <h1 className="text-2xl font-bold text-white">
-                  <span className="text-blue-400">Bolt</span> AI Crypto
+                  <span className="text-blue-400">Bolt</span> AI Crypto + HTS Trading
                 </h1>
               </div>
               <div className="hidden md:flex items-center space-x-1 ml-8">
@@ -173,11 +241,25 @@ function AppContent() {
           </div>
         </header>
 
+        {/* HTS Navigation */}
+        <Navbar 
+          activeView={htsActiveView} 
+          onViewChange={setHtsActiveView}
+        />
+
       {/* Market Ticker */}
       <MarketTicker marketData={marketData} />
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-6">
+        {/* HTS Trading System Views */}
+        {htsActiveView !== 'dashboard' && (
+          <div className="mb-8">
+            {renderHtsView()}
+          </div>
+        )}
+
+        {/* Original Bolt AI Crypto Views */}
         {activeView === 'dashboard' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Chart Section */}
@@ -296,13 +378,17 @@ function AppContent() {
         <footer className="bg-gray-900 border-t border-gray-800 px-6 py-4 mt-8">
           <div className="flex items-center justify-between text-sm text-gray-400">
             <div>
-              © 2025 Bolt AI Crypto. Not financial advice. Trade at your own risk.
+              © 2025 Bolt AI Crypto + HTS Trading System. Not financial advice. Trade at your own risk.
             </div>
             <div className="flex items-center space-x-4">
               <span>Neural Network: Stable Training Active</span>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <span>Live Data Feed</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
+                <span>HTS WebSocket: {connected ? 'Connected' : 'Disconnected'}</span>
               </div>
             </div>
           </div>
