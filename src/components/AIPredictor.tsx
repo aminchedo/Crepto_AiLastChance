@@ -1,205 +1,211 @@
-import React, { useState, useEffect } from 'react';
-import { PredictionData } from '../types';
-import { useFeature } from '../contexts/FeatureFlagContext';
-import { Brain, Target, TrendingUp, TrendingDown, Minus, AlertTriangle, Lock } from 'lucide-react';
+import React from 'react';
+import { Brain, TrendingUp, TrendingDown, Minus, AlertTriangle, Target } from 'lucide-react';
+import { AIPredictorProps } from '../types';
 
-interface AIPredictorProps {
-  predictions: Record<string, PredictionData>;
-}
-
-export const AIPredictor: React.FC<AIPredictorProps> = ({ predictions }) => {
-  const [selectedSymbol, setSelectedSymbol] = useState('BTC');
-  const isAIPredictionsEnabled = useFeature('ai-predictions');
-  const isAdvancedChartsEnabled = useFeature('advanced-charts');
-  const isAIOptimizationEnabled = useFeature('ai-optimization');
-  
-  const currentPrediction = predictions[selectedSymbol];
-  const symbols = Object.keys(predictions);
-
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return 'text-green-400';
-    if (confidence >= 0.6) return 'text-yellow-400';
-    return 'text-red-400';
-  };
-
-  const getRiskColor = (risk: number) => {
-    if (risk <= 0.2) return 'text-green-400';
-    if (risk <= 0.3) return 'text-yellow-400';
-    return 'text-red-400';
-  };
-
-  const getPredictionIcon = (prediction: string) => {
-    switch (prediction) {
-      case 'BULL': return <TrendingUp className="text-green-400" size={24} />;
-      case 'BEAR': return <TrendingDown className="text-red-400" size={24} />;
-      default: return <Minus className="text-gray-400" size={24} />;
-    }
-  };
-
-  // Show disabled state if AI predictions are not enabled
-  if (!isAIPredictionsEnabled) {
+const AIPredictor: React.FC<AIPredictorProps> = ({ 
+  prediction, 
+  symbol, 
+  isLoading = false 
+}) => {
+  if (isLoading) {
     return (
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <Brain className="text-gray-500" size={28} />
-            <h3 className="text-xl font-bold text-gray-400">AI Predictions</h3>
-            <Lock className="text-gray-500" size={16} />
-          </div>
+      <div className="ai-predictor animate-pulse">
+        <div className="flex justify-between items-center mb-4">
+          <div className="h-4 bg-gray-700 rounded w-24"></div>
+          <div className="h-6 bg-gray-700 rounded w-20"></div>
         </div>
-        
-        <div className="text-center text-gray-500 py-8">
-          <Lock size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="text-lg font-medium mb-2">AI Predictions Disabled</p>
-          <p className="text-sm">This feature is currently disabled. Enable it in the feature flags to access AI-powered predictions.</p>
+        <div className="h-16 bg-gray-700 rounded mb-4"></div>
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="h-16 bg-gray-700 rounded"></div>
+          <div className="h-16 bg-gray-700 rounded"></div>
+          <div className="h-16 bg-gray-700 rounded"></div>
+        </div>
+        <div className="h-12 bg-gray-700 rounded"></div>
+      </div>
+    );
+  }
+
+  if (!prediction) {
+    return (
+      <div className="ai-predictor">
+        <div className="text-center py-8">
+          <Brain size={48} className="text-gray-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2">No Prediction Available</h3>
+          <p className="text-gray-400 text-sm">
+            AI analysis for {symbol} is not ready yet
+          </p>
         </div>
       </div>
     );
   }
 
+  const getSignalColor = (signal: string) => {
+    switch (signal) {
+      case 'BUY':
+        return 'bg-green-900/30 border-green-700 text-green-400';
+      case 'SELL':
+        return 'bg-red-900/30 border-red-700 text-red-400';
+      default:
+        return 'bg-yellow-900/30 border-yellow-700 text-yellow-400';
+    }
+  };
+
+  const getSignalIcon = (signal: string) => {
+    switch (signal) {
+      case 'BUY':
+        return <TrendingUp size={20} />;
+      case 'SELL':
+        return <TrendingDown size={20} />;
+      default:
+        return <Minus size={20} />;
+    }
+  };
+
+  const getConfidenceColor = (confidence: number) => {
+    if (confidence > 80) return 'text-green-400';
+    if (confidence > 60) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const getConfidenceLevel = (confidence: number) => {
+    if (confidence > 80) return 'High';
+    if (confidence > 60) return 'Medium';
+    return 'Low';
+  };
+
   return (
-    <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <Brain className="text-blue-400" size={28} />
-          <h3 className="text-xl font-bold text-white">AI Predictions</h3>
-          {isAIOptimizationEnabled && (
-            <div className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-              Optimized
-            </div>
-          )}
+    <div className="ai-predictor group hover:scale-105 transition-transform duration-200">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="text-gray-400 text-sm font-semibold flex items-center space-x-2">
+          <Brain size={16} />
+          <span>AI Prediction</span>
         </div>
-        
-        <select
-          value={selectedSymbol}
-          onChange={(e) => setSelectedSymbol(e.target.value)}
-          className="bg-gray-800 text-white px-3 py-2 rounded border border-gray-700 focus:border-blue-500 focus:outline-none"
-        >
-          {symbols.map(symbol => (
-            <option key={symbol} value={symbol}>{symbol}</option>
-          ))}
-        </select>
+        <div className="text-xs bg-blue-900/30 text-blue-400 px-2 py-1 rounded">
+          Confidence: {prediction.confidence}%
+        </div>
       </div>
 
-      {currentPrediction ? (
-        <div className="space-y-6">
-          {/* Main Prediction */}
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-4 mb-4">
-              {getPredictionIcon(currentPrediction.prediction)}
-              <div>
-                <div className="text-2xl font-bold text-white">
-                  {currentPrediction.prediction}
-                </div>
-                <div className={`text-lg font-semibold ${getConfidenceColor(currentPrediction.confidence)}`}>
-                  {(currentPrediction.confidence * 100).toFixed(1)}% Confidence
-                </div>
-              </div>
-            </div>
+      {/* Signal Display */}
+      <div className="mb-4">
+        <div
+          className={`border rounded-lg p-4 text-center font-bold text-lg ${getSignalColor(prediction.signal)}`}
+        >
+          <div className="flex items-center justify-center space-x-2">
+            {getSignalIcon(prediction.signal)}
+            <span>{prediction.signal} SIGNAL</span>
           </div>
+        </div>
+      </div>
 
-          {/* Probability Distribution */}
-          <div className="space-y-3">
-            <h4 className="text-lg font-semibold text-white mb-3">Probability Distribution</h4>
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-green-400 font-medium">Bullish</span>
-                <span className="text-white">{(currentPrediction.bullishProbability * 100).toFixed(1)}%</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div 
-                  className="bg-green-400 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${currentPrediction.bullishProbability * 100}%` }}
-                ></div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-red-400 font-medium">Bearish</span>
-                <span className="text-white">{(currentPrediction.bearishProbability * 100).toFixed(1)}%</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div 
-                  className="bg-red-400 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${currentPrediction.bearishProbability * 100}%` }}
-                ></div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400 font-medium">Neutral</span>
-                <span className="text-white">{(currentPrediction.neutralProbability * 100).toFixed(1)}%</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div 
-                  className="bg-gray-400 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${currentPrediction.neutralProbability * 100}%` }}
-                ></div>
-              </div>
-            </div>
+      {/* Probability Breakdown */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-gray-800/50 rounded p-3 text-center">
+          <div className="text-gray-400 text-xs mb-1">Bullish</div>
+          <div className="text-green-400 font-bold text-lg">
+            {prediction.bullishProbability}%
           </div>
+        </div>
+        <div className="bg-gray-800/50 rounded p-3 text-center">
+          <div className="text-gray-400 text-xs mb-1">Neutral</div>
+          <div className="text-yellow-400 font-bold text-lg">
+            {prediction.neutralProbability}%
+          </div>
+        </div>
+        <div className="bg-gray-800/50 rounded p-3 text-center">
+          <div className="text-gray-400 text-xs mb-1">Bearish</div>
+          <div className="text-red-400 font-bold text-lg">
+            {prediction.bearishProbability}%
+          </div>
+        </div>
+      </div>
 
-          {/* Risk Assessment */}
-          <div className="bg-gray-800 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <AlertTriangle size={20} className="text-yellow-400" />
-                <span className="text-white font-semibold">Risk Assessment</span>
-              </div>
-              <span className={`font-bold ${getRiskColor(currentPrediction.riskScore)}`}>
-                {(currentPrediction.riskScore * 100).toFixed(1)}%
-              </span>
-            </div>
-            
-            <div className="w-full bg-gray-700 rounded-full h-2">
-              <div 
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  currentPrediction.riskScore <= 0.2 ? 'bg-green-400' :
-                  currentPrediction.riskScore <= 0.3 ? 'bg-yellow-400' : 'bg-red-400'
-                }`}
-                style={{ width: `${currentPrediction.riskScore * 100}%` }}
+      {/* Confidence and Risk */}
+      <div className="border-t border-gray-700 pt-3 space-y-2">
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-400">Confidence</span>
+          <div className="flex items-center space-x-2">
+            <span className={`font-bold ${getConfidenceColor(prediction.confidence)}`}>
+              {prediction.confidence}%
+            </span>
+            <span className={`text-xs px-2 py-1 rounded ${
+              prediction.confidence > 80 ? 'bg-green-900/30 text-green-400' :
+              prediction.confidence > 60 ? 'bg-yellow-900/30 text-yellow-400' :
+              'bg-red-900/30 text-red-400'
+            }`}>
+              {getConfidenceLevel(prediction.confidence)}
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-400">Risk Score</span>
+          <div className="flex items-center space-x-2">
+            <span className="text-orange-400 font-bold">{prediction.riskScore}%</span>
+            <div className="w-16 bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-orange-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${prediction.riskScore}%` }}
               ></div>
             </div>
           </div>
+        </div>
 
-          {/* Trading Signal */}
-          <div className={`p-4 rounded-lg border-2 ${
-            currentPrediction.prediction === 'BULL' ? 'bg-green-900/20 border-green-500' :
-            currentPrediction.prediction === 'BEAR' ? 'bg-red-900/20 border-red-500' :
-            'bg-gray-800 border-gray-600'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-semibold text-white mb-1">Trading Signal</div>
-                <div className="text-sm text-gray-400">
-                  Based on current market conditions and AI analysis
-                </div>
+        {/* Timeframe */}
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-400">Timeframe</span>
+          <span className="text-blue-400 font-semibold">{prediction.timeframe}</span>
+        </div>
+
+        {/* Model Version */}
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-400">Model</span>
+          <span className="text-gray-300 font-mono text-xs">{prediction.modelVersion}</span>
+        </div>
+      </div>
+
+      {/* Price Targets */}
+      {prediction.priceTarget && (
+        <div className="mt-4 border-t border-gray-700 pt-3">
+          <div className="flex items-center space-x-2 mb-2">
+            <Target size={16} className="text-purple-400" />
+            <span className="text-sm font-semibold text-white">Price Targets</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="text-center">
+              <div className="text-gray-400">Short</div>
+              <div className="text-white font-semibold">
+                ${prediction.priceTarget.short.toFixed(2)}
               </div>
-              <div className={`text-right ${
-                currentPrediction.prediction === 'BULL' ? 'text-green-400' :
-                currentPrediction.prediction === 'BEAR' ? 'text-red-400' :
-                'text-gray-400'
-              }`}>
-                <div className="font-bold text-lg">
-                  {currentPrediction.prediction === 'BULL' ? 'LONG' :
-                   currentPrediction.prediction === 'BEAR' ? 'SHORT' : 'HOLD'}
-                </div>
-                <div className="text-xs">
-                  {new Date(currentPrediction.timestamp).toLocaleTimeString()}
-                </div>
+            </div>
+            <div className="text-center">
+              <div className="text-gray-400">Medium</div>
+              <div className="text-white font-semibold">
+                ${prediction.priceTarget.medium.toFixed(2)}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-gray-400">Long</div>
+              <div className="text-white font-semibold">
+                ${prediction.priceTarget.long.toFixed(2)}
               </div>
             </div>
           </div>
         </div>
-      ) : (
-        <div className="text-center text-gray-400 py-8">
-          <Target size={48} className="mx-auto mb-4 opacity-50" />
-          <p>Waiting for AI predictions...</p>
+      )}
+
+      {/* Warning for Low Confidence */}
+      {prediction.confidence < 60 && (
+        <div className="mt-4 flex items-center space-x-2 text-yellow-400 text-xs bg-yellow-900/20 border border-yellow-700 rounded p-2">
+          <AlertTriangle size={14} />
+          <span>Low confidence prediction - use with caution</span>
         </div>
       )}
+
+      {/* Hover Effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"></div>
     </div>
   );
 };
+
+export default AIPredictor;
